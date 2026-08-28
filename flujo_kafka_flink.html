@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cómo viaja un clic — guía interactiva del pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1017; --bg2:#12161f; --surf:#171c26; --surf2:#1e242f;
+  --ink:#e8edf5; --soft:#9caabd; --faint:#6d7c91;
+  --rule:#28303d; --rule2:#3a4557;
+
+  --gen:#5FD3AE; --kaf:#93A6F5; --fli:#F292B6; --det:#F2B865; --das:#B694F5;
+  --ok:#54D6AC; --bad:#FF8168; --warn:#F3C551; --info:#77ADFF; --ml:#B694F5;
+
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Space Grotesk','Segoe UI',system-ui,sans-serif;
+  --body:'Inter','Segoe UI',system-ui,sans-serif;
+  --sh:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:-.01em;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding:0 18px 110px}
+
+header{position:sticky;top:0;z-index:40;background:rgba(13,16,23,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.hd{max-width:1240px;margin:0 auto;padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{margin-right:auto}
+.brand h1{font-size:15px}
+.brand span{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.tabs{display:flex;gap:5px;flex-wrap:wrap}
+.tab{font-family:var(--mono);font-size:11px;border:1px solid var(--rule2);background:transparent;color:var(--soft);padding:5px 10px;border-radius:999px;cursor:pointer;transition:.16s;display:flex;gap:6px;align-items:center}
+.tab b{color:var(--faint)}
+.tab:hover{border-color:var(--faint);color:var(--ink)}
+.tab.sel{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.tab.sel b{color:rgba(13,16,23,.5)}
+.dbtn{font-family:var(--mono);font-size:11px;border:1px solid var(--rule2);background:transparent;padding:5px 10px;border-radius:8px;cursor:pointer;color:var(--soft)}
+.dbtn:hover{border-color:var(--faint);color:var(--ink)}
+
+.stage{margin-top:20px;border:1px solid var(--rule);border-radius:15px;background:var(--bg2);min-height:520px;overflow:hidden;box-shadow:var(--sh)}
+.scene{display:none}
+.scene.live{display:block}
+.sbody{display:grid;grid-template-columns:1fr 350px;min-height:520px}
+.sbody.full{grid-template-columns:1fr}
+.main{padding:18px 20px;min-width:0}
+.insp{border-left:1px solid var(--rule);background:var(--surf);padding:16px 16px 22px;overflow-y:auto;max-height:660px}
+
+.eye{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.eye::after{content:'';flex:1;height:1px;background:var(--rule)}
+.lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.chip{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;display:inline-block;white-space:nowrap}
+.note{font-size:12.5px;color:var(--soft);background:#2b2413;border:1px dashed #5c4d22;border-radius:9px;padding:9px 11px;line-height:1.5}
+.note b{color:#f0cd77}
+.warnbox{font-size:12px;color:var(--soft);background:#3f1e16;border:1px dashed #7a3a2a;border-radius:9px;padding:8px 11px}
+.warnbox b{color:var(--bad)}
+
+[data-from]{opacity:0;transform:translateY(7px);transition:opacity .4s,transform .4s cubic-bezier(.2,.7,.3,1)}
+[data-from].on{opacity:1;transform:none}
+
+/* ── sesiones ── */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:7px}
+.scard{border:1px solid var(--rule);border-left:3px solid var(--c);border-radius:9px;background:var(--surf);padding:7px 9px;cursor:pointer;transition:.16s;position:relative}
+.scard:hover{border-color:var(--c);transform:translateY(-2px)}
+.scard.sel{background:color-mix(in srgb,var(--c) 14%,var(--surf));border-color:var(--c);box-shadow:0 0 0 1px var(--c)}
+.scard .sid{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--c)}
+.scard .sm{font-family:var(--mono);font-size:9px;color:var(--faint);margin-top:2px}
+.scard .tag{position:absolute;right:6px;top:6px;font-family:var(--mono);font-size:7.5px;padding:1px 5px;border-radius:4px}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--c);display:inline-block;margin-left:4px;animation:pl 1.8s infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 60%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ── json ── */
+.jbox{border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:var(--bg2)}
+.jbox .jh{padding:6px 10px;border-bottom:1px solid var(--rule);background:var(--surf2);font-family:var(--mono);font-size:10px;color:var(--soft);display:flex;justify-content:space-between}
+.jbox pre{margin:0;padding:10px 11px;font-family:var(--mono);font-size:10.5px;line-height:1.8;overflow-x:auto}
+.k{color:var(--kaf)} .v{color:var(--gen)} .n{color:var(--fli)}
+.jl{display:block;border-radius:3px;padding:0 4px;margin:0 -4px}
+.jl.hot{background:color-mix(in srgb,var(--warn) 18%,transparent);box-shadow:inset 2px 0 0 var(--warn)}
+.jl.idf{background:color-mix(in srgb,var(--info) 14%,transparent);box-shadow:inset 2px 0 0 var(--info)}
+.jl.aud{color:var(--faint)}
+
+/* ── kafka ── */
+.tbox{border:1px solid var(--rule);border-radius:10px;background:var(--surf);padding:10px 11px}
+.prow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.prow .pn{font-family:var(--mono);font-size:9.5px;color:var(--faint);width:66px;flex:none}
+.tape{flex:1;display:flex;gap:3px;background:var(--bg2);border:1px solid var(--rule);border-radius:7px;padding:4px;min-height:36px;align-items:center;flex-wrap:wrap}
+.cell{width:29px;height:27px;border-radius:5px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;cursor:pointer;background:color-mix(in srgb,var(--c) 20%,var(--bg2));color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);transition:.14s;animation:dr .35s}
+.cell:hover{transform:translateY(-2px)}
+.cell.sel{box-shadow:0 0 0 2px var(--c);background:color-mix(in srgb,var(--c) 35%,var(--bg2))}
+.cell.unread{opacity:.4}
+.cell b{font-size:9px;line-height:1} .cell span{font-size:7px;opacity:.75;line-height:1}
+.cell.ghost{background:var(--surf2);border-style:dashed;border-color:var(--rule2);color:var(--faint);cursor:default}
+@keyframes dr{from{opacity:0;transform:translateY(-10px) scale(.8)}to{opacity:1;transform:none}}
+.ptrs{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;color:var(--soft);margin-top:8px}
+.ptr i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px}
+.lagc{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:999px;font-weight:700}
+
+/* ── flink ── */
+.topo{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.op{font-family:var(--mono);font-size:9.5px;padding:4px 8px;border-radius:6px;background:var(--surf);border:1px solid var(--rule2);color:var(--soft);white-space:nowrap}
+.op.act{background:color-mix(in srgb,var(--fli) 22%,var(--surf));border-color:var(--fli);color:var(--fli);font-weight:700}
+.tar{color:var(--faint);font-size:10px}
+.lane{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.lane .lid{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--c);width:70px;flex:none}
+.win{flex:1;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--c) 10%,var(--surf));min-height:38px;padding:5px 7px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;position:relative;transition:.3s}
+.win.closed{background:color-mix(in srgb,var(--c) 24%,var(--surf))}
+.ev{width:23px;height:23px;border-radius:5px;background:var(--c);color:var(--bg);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:7.5px;font-weight:700;cursor:pointer;transition:.14s;animation:pp .34s backwards}
+.ev:hover{transform:scale(1.14)}
+.ev.sel{box-shadow:0 0 0 2px var(--ink)}
+@keyframes pp{from{opacity:0;transform:scale(.3) translateX(-14px)}to{opacity:1;transform:none}}
+.clk{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;color:var(--soft);margin-bottom:10px}
+.clkbar{flex:1;height:6px;border-radius:3px;background:var(--surf2);overflow:hidden}
+.clkbar i{display:block;height:100%;background:var(--fli);width:0;transition:width .5s linear}
+.pill{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:999px;font-weight:700}
+
+/* vector con identidad */
+.vecbox{border:1px solid var(--rule);border-left:3px solid var(--c);border-radius:9px;background:var(--surf);padding:9px 11px}
+.vecbox .vh{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--c);margin-bottom:6px}
+.vtab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:9.5px}
+.vtab td{padding:2px 0}
+.vtab td:last-child{text-align:right;font-weight:700}
+.vtab tr.id td{color:var(--info)}
+.vtab tr.id td:last-child{color:var(--info)}
+.vtab tr.mt td{color:var(--soft)}
+.vtab tr.mt td:last-child{color:var(--ink)}
+.vtab tr.sep td{padding-top:5px;border-top:1px dashed var(--rule)}
+
+/* ── tabla de vectores ── */
+.filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.fb{font-family:var(--mono);font-size:10px;border:1px solid var(--rule2);background:transparent;color:var(--soft);padding:4px 9px;border-radius:7px;cursor:pointer}
+.fb:hover{border-color:var(--faint);color:var(--ink)}
+.fb.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.vwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:9px}
+table.vt{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px;min-width:640px}
+table.vt th{background:var(--surf2);color:var(--faint);font-weight:500;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;padding:6px 5px;text-align:right;border-bottom:1px solid var(--rule);position:sticky;top:0}
+table.vt th:first-child,table.vt th:nth-child(2){text-align:left}
+table.vt td{padding:5px;text-align:right;border-bottom:1px solid var(--rule);color:var(--soft)}
+table.vt td:first-child,table.vt td:nth-child(2){text-align:left}
+table.vt tr{cursor:pointer;transition:.12s}
+table.vt tr:hover td{background:var(--surf2)}
+table.vt tr.sel td{background:color-mix(in srgb,var(--info) 16%,var(--surf));color:var(--ink)}
+.vd{font-family:var(--mono);font-size:8.5px;padding:1px 6px;border-radius:4px;font-weight:700}
+.vd.rule{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.vd.ml{background:color-mix(in srgb,var(--ml) 22%,transparent);color:var(--ml)}
+.vd.both{background:color-mix(in srgb,var(--bad) 20%,transparent);color:var(--bad)}
+.vd.none{background:var(--surf2);color:var(--faint)}
+.stats{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.st{border:1px solid var(--rule);border-radius:8px;background:var(--surf);padding:6px 10px;flex:1;min-width:106px}
+.st .sv{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--c)}
+.st .sl{font-size:9.5px;color:var(--faint);line-height:1.3}
+
+/* evaluación en inspector */
+.evalrow{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule)}
+.evalrow .ic{width:17px;height:17px;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:1px}
+.ic.yes{background:color-mix(in srgb,var(--bad) 25%,transparent);color:var(--bad)}
+.ic.no{background:var(--surf2);color:var(--faint)}
+.evalrow .et{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink)}
+.evalrow .ed{font-size:11px;color:var(--soft);line-height:1.45;margin-top:2px}
+.evalrow .ec{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:3px}
+
+/* ── docker / capas ── */
+.ctns{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+.ctn{border:1px solid var(--rule);border-top:3px solid var(--c);border-radius:10px;background:var(--surf);padding:9px 11px;cursor:pointer;transition:.16s}
+.ctn:hover{transform:translateY(-2px);border-color:var(--c)}
+.ctn.sel{background:color-mix(in srgb,var(--c) 14%,var(--surf));box-shadow:0 0 0 1px var(--c)}
+.ctn .cn{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--c)}
+.ctn .ci{font-family:var(--mono);font-size:9px;color:var(--faint);margin-top:2px}
+.netbox{border:1.5px dashed var(--kaf);border-radius:12px;padding:14px;position:relative;margin-bottom:12px}
+.netbox .nl{position:absolute;top:-9px;left:14px;background:var(--bg2);padding:0 8px;font-family:var(--mono);font-size:9.5px;color:var(--kaf);font-weight:700}
+.layers{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.layer{border:1px solid var(--rule);border-radius:10px;background:var(--surf);padding:10px 8px;text-align:center;cursor:pointer;transition:.3s}
+.layer:hover{transform:translateY(-2px)}
+.layer.hot{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--surf));box-shadow:0 0 0 1px var(--c)}
+.layer .ln{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--c)}
+.layer .lf{font-family:var(--mono);font-size:8px;color:var(--faint);margin-top:3px;word-break:break-all}
+.kb{font-family:var(--mono);font-size:8px;background:color-mix(in srgb,var(--kaf) 18%,transparent);color:var(--kaf);border-radius:4px;padding:1px 5px;display:inline-block;margin-top:5px}
+
+/* ── narración ── */
+.narr{margin-top:15px;display:grid;grid-template-columns:1.6fr 1fr;gap:15px;align-items:start}
+.nm h2{font-size:18px;margin-bottom:6px}
+.nm p{margin:0 0 8px;color:var(--soft);font-size:13.5px}
+.nm code{font-family:var(--mono);font-size:12px;background:var(--surf2);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.nm b{color:var(--ink)}
+.side{display:flex;flex-direction:column;gap:8px}
+.expb{font-family:var(--mono);font-size:11px;text-align:left;border:1px solid var(--bad);background:transparent;color:var(--bad);padding:8px 11px;border-radius:9px;cursor:pointer;line-height:1.4}
+.expb:hover{background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.expb.on{background:var(--bad);color:var(--bg)}
+.quiz{border:1px solid var(--rule);border-radius:9px;background:var(--surf);padding:10px 12px}
+.quiz p{margin:0 0 7px;font-size:12.5px;font-weight:600}
+.quiz .ans{display:none;font-size:12px;color:var(--soft);border-top:1px dashed var(--rule);padding-top:7px}
+.quiz.open .ans{display:block}
+.quiz button{font-family:var(--mono);font-size:10.5px;border:1px solid var(--rule2);background:var(--surf2);padding:4px 9px;border-radius:6px;cursor:pointer;color:var(--soft)}
+
+/* ── controles ── */
+.ctrl{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(13,16,23,.94);backdrop-filter:blur(10px);border-top:1px solid var(--rule)}
+.ci2{max-width:1240px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:12px}
+.nb{font-family:var(--disp);font-size:12.5px;border:1px solid var(--rule2);background:transparent;color:var(--ink);padding:7px 14px;border-radius:8px;cursor:pointer}
+.nb:hover:not(:disabled){border-color:var(--ink)}
+.nb:disabled{opacity:.3;cursor:default}
+.nb.pri{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.dots{display:flex;gap:4px;margin:0 auto;flex-wrap:wrap;justify-content:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--rule2);cursor:pointer;transition:.2s}
+.dot.on{background:var(--ink);transform:scale(1.35)}
+.dot.past{background:var(--faint)}
+.pos{font-family:var(--mono);font-size:10px;color:var(--faint);min-width:64px;text-align:right}
+
+/* ── cajones ── */
+.drw{position:fixed;top:0;right:0;bottom:0;width:min(460px,94vw);background:var(--bg2);border-left:1px solid var(--rule);z-index:60;transform:translateX(101%);transition:transform .3s cubic-bezier(.2,.8,.3,1);overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,.5)}
+.drw.open{transform:none}
+.drw .dh{position:sticky;top:0;background:var(--bg2);padding:15px 17px 10px;border-bottom:1px solid var(--rule);display:flex;align-items:center;z-index:2}
+.drw .dh h3{font-size:14px;margin-right:auto}
+.drw .dh button{border:none;background:none;font-size:21px;cursor:pointer;color:var(--faint);line-height:1}
+.drw table{width:100%;border-collapse:collapse}
+.drw td{padding:8px 17px;border-bottom:1px solid var(--rule);vertical-align:top;font-size:12px;color:var(--soft)}
+.drw td:first-child{font-family:var(--mono);font-weight:700;color:var(--ink);white-space:nowrap;width:1%}
+.drw td em{display:block;font-style:normal;color:var(--faint);font-size:10.5px;font-family:var(--body);margin-top:2px}
+.drw tr.warn td:first-child{color:var(--bad)}
+.oh{padding:13px 17px 5px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.oi{padding:10px 17px;border-bottom:1px solid var(--rule)}
+.oi .ot{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink);display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.oi .od{font-size:12px;color:var(--soft);margin-top:4px;line-height:1.5}
+.oi .on{font-size:11.5px;margin-top:6px;padding:6px 9px;border-radius:7px;line-height:1.45}
+.on.ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent)}
+.on.par{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+.on.fut{background:color-mix(in srgb,var(--info) 12%,transparent);color:var(--info);border:1px solid color-mix(in srgb,var(--info) 30%,transparent)}
+.badge{font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:4px;font-weight:700}
+.b-ok{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}
+.b-par{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}
+.b-fut{background:color-mix(in srgb,var(--info) 22%,transparent);color:var(--info)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55;opacity:0;pointer-events:none;transition:.3s}
+.scrim.open{opacity:1;pointer-events:auto}
+
+.ihint{font-size:11.5px;color:var(--faint);text-align:center;padding:26px 10px;line-height:1.6;font-style:italic}
+
+@media(max-width:900px){
+  .sbody{grid-template-columns:1fr}
+  .insp{border-left:none;border-top:1px solid var(--rule);max-height:none}
+  .narr{grid-template-columns:1fr}
+  .layers{grid-template-columns:1fr 1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header><div class="hd">
+  <div class="brand"><h1>Cómo viaja un clic</h1><span>Faker · Kafka · Flink · Detección híbrida</span></div>
+  <div class="tabs" id="tabs"></div>
+  <button class="dbtn" id="objBtn">Objetivos e hipótesis</button>
+  <button class="dbtn" id="gloBtn">Glosario</button>
+</div></header>
+
+<div class="wrap">
+  <div class="stage" id="stage"></div>
+  <div class="narr">
+    <div class="nm"><h2 id="sTitle"></h2><div id="sBody"></div></div>
+    <div class="side" id="side"></div>
+  </div>
+</div>
+
+<div class="ctrl"><div class="ci2">
+  <button class="nb" id="prev">← Anterior</button>
+  <div class="dots" id="dots"></div>
+  <span class="pos" id="pos"></span>
+  <button class="nb pri" id="next">Siguiente →</button>
+</div></div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drw" id="drwGlo"><div class="dh"><h3>Glosario</h3><button data-close>×</button></div><div id="gloBody"></div></aside>
+<aside class="drw" id="drwObj"><div class="dh"><h3>Objetivos e hipótesis</h3><button data-close>×</button></div><div id="objBody"></div></aside>
+
+<script>
+/* ════════════ DATOS ════════════ */
+
+const SESS = [
+ {id:'sess_A7f3',u:'usr_04471',ip:'190.44.12.8',dev:'desktop',    k:'normal', c:'#77ADFF',p:0,ev:'add_to_cart',   url:'/carrito',            lat:195},
+ {id:'sess_B1c9',u:'usr_09903',ip:'45.77.201.3',dev:'bot_scraper',k:'bot',    c:'#FF8168',p:2,ev:'page_view',     url:'/producto/zap-001',   lat:7},
+ {id:'sess_C4e2',u:'usr_01180',ip:'201.5.66.9', dev:'desktop',    k:'drop',   c:'#F3C551',p:1,ev:'checkout_start',url:'/checkout',           lat:121},
+ {id:'sess_D8a1',u:'usr_02255',ip:'190.44.90.1',dev:'tablet',     k:'normal', c:'#54D6AC',p:1,ev:'page_view',     url:'/categoria/zapatos',  lat:188},
+ {id:'sess_E2b7',u:'usr_06614',ip:'186.22.4.77',dev:'mobile',     k:'lat',    c:'#E87FD4',p:0,ev:'page_view',     url:'/ofertas',            lat:5200},
+ {id:'sess_F5d0',u:'usr_03092',ip:'190.44.7.21',dev:'mobile',     k:'normal', c:'#93A6F5',p:2,ev:'purchase',      url:'/confirmacion',       lat:174},
+ {id:'sess_G9h4',u:'usr_07731',ip:'200.121.9.4',dev:'desktop',    k:'normal', c:'#7FD1E8',p:0,ev:'page_view',     url:'/',                   lat:143},
+ {id:'sess_H3k8',u:'usr_05528',ip:'190.44.33.1',dev:'tablet',     k:'normal', c:'#A8D96F',p:2,ev:'add_to_cart',   url:'/carrito',            lat:206},
+ {id:'sess_J6m2',u:'usr_08846',ip:'181.65.2.90',dev:'mobile',     k:'normal', c:'#6FC9C3',p:1,ev:'page_view',     url:'/buscar',             lat:159},
+ {id:'sess_K1n5',u:'usr_01207',ip:'190.44.55.6',dev:'desktop',    k:'normal', c:'#B694F5',p:0,ev:'checkout_start',url:'/checkout',           lat:132}
+];
+const S = Object.fromEntries(SESS.map(s=>[s.id,s]));
+
+const KIND = {
+ normal:{t:'normal',  col:'var(--faint)', bg:'var(--surf2)',
+   d:'Sesión legítima. Recorre el embudo de forma coherente y con latencias de servidor propias de un usuario real.',
+   sig:'Ningún campo se sale de rango. <code>is_anomaly: false</code>.'},
+ bot:{t:'bot', col:'#FF8168', bg:'rgba(255,129,104,.18)',
+   d:'Scraper de catálogo. Entra directo a fichas de producto sin recorrer el grafo de navegación, y solo emite <code>page_view</code>.',
+   sig:'Dos firmas: <code>device</code> sobrescrito a <code>bot_scraper</code> y <code>latency</code> entre 1 y 18 ms — imposible para un humano.'},
+ drop:{t:'checkout_drop', col:'#F3C551', bg:'rgba(243,197,81,.18)',
+   d:'Abandono de carrito. Llega hasta la pantalla de pago y reintenta varias veces sin completar nunca la compra. En producción suele significar pasarela de pago caída, cupón que falla o cálculo de envío roto.',
+   sig:'<b>Ningún campo individual es anómalo.</b> El dispositivo es real y la latencia normal (~120 ms). Lo raro es la forma: <code>checkout_starts</code> alto con <code>purchases</code> en cero.'},
+ lat:{t:'high_latency', col:'#E87FD4', bg:'rgba(232,127,212,.18)',
+   d:'Degradación de infraestructura. El usuario es legítimo y navega con normalidad; lo que falla es el servidor.',
+   sig:'<code>latency</code> entre 2.000 y 8.000 ms en todos sus eventos. El promedio de la ventana ronda los 5.000 ms.'}
+};
+
+/* ── flujo que entra a Kafka ── */
+const KSTREAM = ['sess_B1c9','sess_A7f3','sess_C4e2','sess_B1c9','sess_G9h4','sess_D8a1',
+                 'sess_B1c9','sess_A7f3','sess_E2b7','sess_C4e2','sess_F5d0','sess_B1c9',
+                 'sess_J6m2','sess_A7f3','sess_H3k8','sess_E2b7','sess_C4e2','sess_K1n5'];
+const KEXTRA = ['sess_B1c9','sess_A7f3','sess_E2b7','sess_C4e2','sess_G9h4','sess_B1c9'];
+
+/* ── ventanas de Flink ── */
+const LANES = [
+ {sid:'sess_A7f3', evs:[['page_view',180],['page_view',205],['add_to_cart',195],['checkout_start',210],['purchase',188]]},
+ {sid:'sess_B1c9', evs:[['page_view',7],['page_view',12],['page_view',4],['page_view',15],['page_view',9],['page_view',2],['page_view',18]]},
+ {sid:'sess_C4e2', evs:[['page_view',118],['page_view',124],['add_to_cart',131],['add_to_cart',109],['checkout_start',122],['checkout_start',115],['checkout_start',127],['checkout_start',120],['checkout_start',113],['checkout_start',126],['checkout_start',119],['page_view',130]]},
+ {sid:'sess_E2b7', evs:[['page_view',5200],['page_view',3100],['add_to_cart',7800],['checkout_start',2400],['purchase',6600],['page_view',4900]]}
+];
+const EVAB = {page_view:'PV', add_to_cart:'CA', checkout_start:'CK', purchase:'PU'};
+const EVFIELD = {page_view:'page_views_count', add_to_cart:'cart_adds_count', checkout_start:'checkout_starts_count', purchase:'purchases_count'};
+
+function agg(lane){
+  const a={clicks:0,tot:0,pv:0,ca:0,ck:0,pu:0};
+  lane.evs.forEach(([t,l])=>{a.clicks++;a.tot+=l;
+    if(t==='page_view')a.pv++; if(t==='add_to_cart')a.ca++;
+    if(t==='checkout_start')a.ck++; if(t==='purchase')a.pu++;});
+  a.avg = Math.round(a.tot/a.clicks*100)/100;
+  return a;
+}
+
+/* ── 20 vectores ilustrativos ── */
+const VEC = [
+ {id:'v_01',dev:'bot_scraper',cl:7, lat:9.57,   pv:7,ca:0,ck:0,pu:0,ml:0,sc:-0.4102,k:'bot'},
+ {id:'v_02',dev:'bot_scraper',cl:11,lat:6.20,   pv:11,ca:0,ck:0,pu:0,ml:0,sc:-0.3874,k:'bot'},
+ {id:'v_03',dev:'bot_scraper',cl:4, lat:14.75,  pv:4,ca:0,ck:0,pu:0,ml:0,sc:-0.4431,k:'bot'},
+ {id:'v_04',dev:'mobile',     cl:6, lat:5000.00,pv:3,ca:1,ck:1,pu:1,ml:1,sc:-0.6412,k:'lat'},
+ {id:'v_05',dev:'desktop',    cl:11,lat:3820.50,pv:6,ca:2,ck:2,pu:1,ml:0,sc:-0.5218,k:'lat'},
+ {id:'v_06',dev:'tablet',     cl:9, lat:7943.00,pv:5,ca:2,ck:1,pu:1,ml:1,sc:-0.6688,k:'lat'},
+ {id:'v_07',dev:'desktop',    cl:12,lat:121.17, pv:3,ca:2,ck:7,pu:0,ml:1,sc:-0.6501,k:'drop'},
+ {id:'v_08',dev:'mobile',     cl:13,lat:118.40, pv:3,ca:2,ck:8,pu:0,ml:1,sc:-0.6605,k:'drop'},
+ {id:'v_09',dev:'tablet',     cl:10,lat:126.80, pv:2,ca:2,ck:6,pu:0,ml:1,sc:-0.6317,k:'drop'},
+ {id:'v_10',dev:'desktop',    cl:14,lat:115.30, pv:4,ca:2,ck:8,pu:0,ml:1,sc:-0.6742,k:'drop'},
+ {id:'v_11',dev:'mobile',     cl:9, lat:133.60, pv:2,ca:1,ck:6,pu:0,ml:1,sc:-0.6188,k:'drop'},
+ {id:'v_12',dev:'desktop',    cl:8, lat:122.40, pv:5,ca:1,ck:1,pu:1,ml:0,sc:-0.4110,k:'normal'},
+ {id:'v_13',dev:'tablet',     cl:11,lat:117.90, pv:7,ca:2,ck:1,pu:1,ml:0,sc:-0.3902,k:'normal'},
+ {id:'v_14',dev:'mobile',     cl:6, lat:130.20, pv:4,ca:1,ck:1,pu:0,ml:0,sc:-0.4405,k:'normal'},
+ {id:'v_15',dev:'desktop',    cl:13,lat:108.70, pv:8,ca:2,ck:2,pu:1,ml:0,sc:-0.3711,k:'normal'},
+ {id:'v_16',dev:'tablet',     cl:12,lat:119.50, pv:7,ca:2,ck:2,pu:1,ml:1,sc:-0.6049,k:'normal'},
+ {id:'v_17',dev:'mobile',     cl:7, lat:141.30, pv:5,ca:1,ck:1,pu:0,ml:1,sc:-0.6123,k:'normal'},
+ {id:'v_18',dev:'desktop',    cl:10,lat:95.60,  pv:6,ca:2,ck:1,pu:1,ml:1,sc:-0.6074,k:'normal'},
+ {id:'v_19',dev:'mobile',     cl:8, lat:1980.40,pv:4,ca:2,ck:1,pu:1,ml:0,sc:-0.4820,k:'borde'},
+ {id:'v_20',dev:'tablet',     cl:9, lat:2010.75,pv:5,ca:2,ck:1,pu:1,ml:1,sc:-0.6216,k:'borde'}
+];
+
+/* lógica REAL de las reglas, tal cual anomaly_detector.py */
+function rules(v){
+  const r=[];
+  r.push({n:'R1',lbl:'CRITICAL_RULE',hit:v.dev==='bot_scraper',
+    cond:`device == "bot_scraper"`, got:`device = "${v.dev}"`,
+    why:'Firma explícita de automatización. El generador sobrescribe el dispositivo real del usuario por <code>bot_scraper</code>, así que la coincidencia es exacta y determinista.'});
+  r.push({n:'R2',lbl:'PERFORMANCE_RULE',hit:v.lat>2000,
+    cond:'avg_latency_ms > 2000.0', got:`avg_latency_ms = ${fmt(v.lat)}`,
+    why:'Degradación sostenida de infraestructura. Compara el <b>promedio de la ventana</b>, no picos aislados: un solo evento lento queda diluido por los rápidos.'});
+  r.push({n:'R3',lbl:'SECURITY_RULE',hit:v.cl>35,
+    cond:'clicks_count > 35', got:`clicks_count = ${v.cl}`,
+    why:'Denegación de servicio potencial. <b>Nunca se dispara en este proyecto:</b> el generador limita cada sesión a <code>max_events = randint(4, 15)</code>, y el máximo observado en los 13.696 registros reales es 14.'});
+  const first = r.find(x=>x.hit);
+  return {list:r, fired:!!first, first:first?first.n:null, reason:first?first.lbl:null};
+}
+function verdict(v){
+  const R=rules(v);
+  if(R.fired&&v.ml) return {c:'both',t:'AMBAS'};
+  if(R.fired)       return {c:'rule',t:'REGLA'};
+  if(v.ml)          return {c:'ml',  t:'SOLO ML'};
+  return {c:'none',t:'sin alerta'};
+}
+const fmt = n => n.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0 = n => n.toLocaleString('es-PE');
+
+/* ════════════ ESTADO ════════════ */
+let sc=0, st=0, filt='all', parts=1;   // 1 = despliegue real · 3 = vista al escalar
+const sel={0:'sess_A7f3',1:null,2:null,3:'v_07',4:'kafka',5:0,6:null};
+const EXP={crash:false,nokey:false,nokeyby:false};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+/* ════════════ JSON DE UNA SESIÓN ════════════ */
+function jsonFor(s){
+  const an = s.k!=='normal';
+  const L=(cls,k,v,q=true)=>`<span class="jl ${cls}">  <span class="k">"${k}"</span>: ${q?`<span class="v">"${v}"</span>`:`<span class="n">${v}</span>`},</span>`;
+  return `<div class="jbox"><div class="jh"><span>${s.id}</span><span>10 campos</span></div><pre>
+<span class="jl">{</span>
+${L('','timestamp','1755301842.117',false)}
+${L('idf','session_id',s.id)}
+${L('idf','user_id',s.u)}
+${L('idf','ip_address',s.ip)}
+${L(s.k==='bot'?'idf hot':'idf','device',s.dev)}
+${L('','event_type',s.ev)}
+${L(s.k==='drop'?'hot':'','page_url',s.url)}
+${L(s.k==='bot'||s.k==='lat'?'hot':'','latency',s.lat,false)}
+${L('aud','is_anomaly',an?'true':'false',false)}
+<span class="jl aud">  <span class="k">"anomaly_type"</span>: ${an?`<span class="v">"${KIND[s.k].t}"</span>`:`<span class="v">null</span>`}</span>
+<span class="jl">}</span></pre></div>`;
+}
+
+/* ════════════ ESCENA 0 · INGESTA ════════════ */
+function sc0(step){
+  const cards = SESS.map(s=>{
+    const K=KIND[s.k];
+    const tag = s.k==='normal'?'':`<span class="tag" style="background:${K.bg};color:${K.col}">${K.t}</span>`;
+    return `<div class="scard${sel[0]===s.id?' sel':''}" style="--c:${s.c}" data-act="s0" data-id="${s.id}">
+      ${tag}<div class="sid">${s.id}${step>=1?'<span class="pulse"></span>':''}</div>
+      <div class="sm">${s.u} · ${s.dev}</div><div class="sm">${s.ip}</div></div>`;
+  }).join('');
+
+  const main = `<div class="eye">Capa 1 · faker_producer.py</div>
+    <div class="lbl" style="margin-bottom:7px">10 sesiones concurrentes — pulsa cualquiera para inspeccionarla</div>
+    <div class="sgrid">${cards}</div>
+    <div data-from="2" style="margin-top:12px" class="note">
+      <b>3 de 10 son anómalas.</b> El generador inyecta un 8 % de sesiones anómalas repartidas uniformemente entre <code>bot</code>, <code>checkout_drop</code> y <code>high_latency</code>. Aquí están sobrerrepresentadas para que puedas compararlas.</div>
+    <div data-from="3" style="margin-top:9px" class="note">
+      <b>La etiqueta se decide al nacer.</b> En <code>SessionGenerator.__init__</code>, antes del primer evento: <code>random.random() &lt; 0.08</code>. Si sale cara, <code>_pick_anomaly_type()</code> elige uniformemente entre los tres. El destino queda fijado de por vida y cada evento lo hereda.</div>
+    <div data-from="4" style="margin-top:9px" class="warnbox">
+      <b>Salida → localhost:9094.</b> El productor envía con <code>key=event.session_id</code>. Esa clave es la que gobierna el enrutamiento en Kafka. Sin ella, todo lo demás se rompe.</div>`;
+
+  const s=S[sel[0]], K=KIND[s.k];
+  const insp = `<div class="lbl">Sesión seleccionada</div>
+    <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:${s.c};margin:3px 0 9px">${s.id}</div>
+    ${jsonFor(s)}
+    <div style="margin-top:11px"><span class="chip" style="background:${K.bg};color:${K.col}">${K.t}</span></div>
+    <div style="font-size:12.5px;color:var(--soft);margin-top:7px;line-height:1.5">${K.d}</div>
+    <div style="font-size:12px;color:var(--soft);margin-top:9px;padding:8px 10px;border-radius:8px;background:var(--surf2);line-height:1.5">
+      <b style="color:${K.col};font-family:var(--mono);font-size:10px">FIRMA</b><br>${K.sig}</div>
+    <div style="margin-top:11px;font-size:11px;color:var(--faint);line-height:1.5">
+      <span style="color:var(--info)">■</span> identidad — fija toda la sesión<br>
+      <span style="color:var(--warn)">■</span> campo que delata la anomalía<br>
+      <span style="color:var(--faint)">■</span> auditoría — el detector nunca los ve</div>`;
+  return {main, insp};
+}
+
+/* ════════════ ESCENA 1 · KAFKA ════════════ */
+function sc1(step){
+  const N = parts;
+  const nokey = step>=6 && EXP.nokey && N===3;
+
+  let seq = step===0?[]:(step===1?['sess_B1c9']:KSTREAM.slice());
+  if(step>=5 && EXP.crash) seq = KSTREAM.concat(KEXTRA);
+
+  const cnt=Array(N).fill(0), cells=Array.from({length:N},()=>[]);
+  seq.forEach((id,i)=>{
+    const s=S[id];
+    const p = N===1 ? 0 : (nokey ? (i%3) : s.p);
+    cells[p].push({s,off:cnt[p]++,i,p});
+  });
+  const written=seq.length;
+  const read = (step>=5&&EXP.crash) ? KSTREAM.length-5 : Math.max(0,written-5);
+
+  const tapes=cells.map((list,p)=>{
+    const inner = list.length ? list.map(c=>{
+      const un=c.i>=read && step>=4;
+      return `<div class="cell${un?' unread':''}${sel[1]===c.i?' sel':''}" style="--c:${c.s.c}" data-act="s1" data-i="${c.i}">
+        <b>${c.s.id.slice(5,8)}</b><span>${c.off}</span></div>`;
+    }).join('') : '<div class="cell ghost">·</div>'.repeat(step===0?7:1);
+    return `<div class="prow"><span class="pn">partition ${p}</span><div class="tape">${inner}</div></div>`;
+  }).join('');
+
+  const lag=Math.max(0,written-read);
+  const tog=`<div class="filters" style="margin-bottom:11px">
+    <span class="lbl" style="align-self:center;margin-right:4px">vista</span>
+    <button class="fb${N===1?' on':''}" data-act="parts" data-n="1">1 partición · despliegue real</button>
+    <button class="fb${N===3?' on':''}" data-act="parts" data-n="3">3 particiones · al escalar</button></div>`;
+
+  const hashTxt = N===1
+    ? `<span class="chip" style="background:color-mix(in srgb,var(--kaf) 20%,transparent);color:var(--kaf)">hash(key) % 1 = 0 siempre</span>`
+    : `<span class="chip" style="background:color-mix(in srgb,var(--kaf) 20%,transparent);color:var(--kaf)">hash(key) % 3</span>`;
+
+  const viewNote = N===1
+   ? `<div class="warnbox" style="margin-top:10px"><b>Esta es la configuración real.</b> No hay <code>kafka-topics --create</code> en el repositorio ni <code>KAFKA_NUM_PARTITIONS</code> en el compose, así que los tópicos se autocrean con <code>num.partitions = 1</code>.
+      <p style="margin:6px 0 0">Consecuencias: <code>hash(key) % 1 = 0</code> siempre, el enrutamiento es trivial — y el orden pasa a ser <b>total</b>, no solo por sesión. Los resultados son exactamente reproducibles al reprocesar.</p></div>`
+   : `<div class="note" style="margin-top:10px"><b>Vista didáctica — lo que se vería al escalar.</b> Aquí se aprecia el mecanismo: los colores se agrupan por fila porque <code>hash(session_id)</code> es determinista.
+      <p style="margin:6px 0 0">Lo importante: entre esta vista y la anterior <b>no cambia ni una línea de código</b>. Solo una variable de entorno. Esa es la propiedad que valida el diseño.</p></div>`;
+
+  const main=`<div class="eye">Capa 2 · Apache Kafka — el log inmutable</div>
+    ${tog}
+    <div data-from="1" class="prow" style="margin-bottom:10px">
+      <span class="chip" style="background:var(--surf2);color:var(--soft)">key = session_id</span>
+      <span class="tar">→</span>${hashTxt}<span class="tar">→</span>
+      <span class="chip" style="background:var(--surf2);color:var(--soft)">partición destino</span></div>
+    <div class="tbox">
+      <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px;flex-wrap:wrap">
+        <span class="lbl">topic</span>
+        <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--kaf)">ecommerce-events</span>
+        <span class="chip" style="background:var(--surf2);color:var(--faint)">append-only</span>
+        <span data-from="4" class="lagc" style="margin-left:auto;background:${lag>7?'rgba(255,129,104,.2)':'rgba(242,146,182,.18)'};color:${lag>7?'var(--bad)':'var(--fli)'}">lag: ${lag}</span>
+      </div>
+      ${tapes}
+      <div data-from="4" class="ptrs">
+        <span class="ptr"><i style="background:var(--gen)"></i>producer escribió ${written} eventos</span>
+        <span class="ptr"><i style="background:var(--fli)"></i>consumer (Flink) leyó ${read}</span>
+      </div>
+    </div>
+    <div data-from="2">${viewNote}</div>
+    <div data-from="3" style="margin-top:9px" class="note">
+      ${N===1
+        ? '<b>Una sola cinta, todas las sesiones.</b> Con una partición, «misma sesión, misma partición» se cumple de forma trivial. Lo que sigue siendo cierto y no trivial: <b>Kafka coloca, no agrupa.</b> El log conserva los eventos entrelazados. Separarlos en carriles por sesión es trabajo de Flink.'
+        : '<b>Misma sesión, misma fila.</b> Los colores se agrupan por partición. Pero fíjate en lo contrario: cada fila transporta <b>varias sesiones entrelazadas</b>. <b>Kafka coloca; Flink agrupa.</b>'}
+      <p style="margin:6px 0 0">Pulsa cualquier celda para inspeccionarla.</p></div>`;
+
+  let insp;
+  if(sel[1]===null || !seq.length){
+    insp=`<div class="ihint">Pulsa una celda del log<br>para ver de dónde viene ese evento.</div>`;
+  } else {
+    const f=[].concat(...cells).find(c=>c.i===sel[1]);
+    if(!f){ insp=`<div class="ihint">Esa celda ya no está en la vista actual.</div>`; }
+    else{
+      const un=f.i>=read;
+      insp=`<div class="lbl">Celda seleccionada</div>
+      <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:${f.s.c};margin:3px 0 10px">${f.s.id}</div>
+      <table class="vtab" style="font-size:11px">
+        <tr class="id"><td>topic</td><td>ecommerce-events</td></tr>
+        <tr class="id"><td>partition</td><td>${f.p}</td></tr>
+        <tr class="id"><td>offset</td><td>${f.off}</td></tr>
+        <tr class="mt sep"><td>key</td><td>${f.s.id}</td></tr>
+        <tr class="mt"><td>enrutamiento</td><td>${nokey?'round-robin':(N===1?'hash % 1 = 0':'hash(key) % 3')}</td></tr>
+        <tr class="mt"><td>estado</td><td style="color:${un?'var(--bad)':'var(--ok)'}">${un?'sin leer':'ya leído'}</td></tr>
+      </table>
+      <div style="margin-top:11px;font-size:12.5px;color:var(--soft);line-height:1.5">
+        ${nokey
+          ? '<b style="color:var(--bad)">Sin clave.</b> Kafka reparte por turnos. Los eventos de esta sesión están dispersos entre las tres particiones, así que ningún operador de Flink verá la sesión completa.'
+          : N===1
+            ? `Con una sola partición el módulo siempre da 0, así que <b>todo</b> aterriza aquí. El enrutamiento por clave sigue implementado (<code>key=${f.s.id}</code>) y sería determinista con cualquier número de particiones.`
+            : `Al enviarse con <code>key=${f.s.id}</code>, el hash es determinista: <b>todos</b> los eventos de esta sesión caen en la partición ${f.s.p}. Nunca se dispersan.`}
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--soft);line-height:1.5">
+        ${un?'<b style="color:var(--bad)">Aún no leído.</b> Está escrito y persistido: si Flink cae ahora, lo encontrará intacto al reanudar.'
+            :'<b style="color:var(--ok)">Ya leído por Flink.</b> Y sigue en disco — leer <b>no</b> destruye. Otro consumidor puede volver a leerlo cuando quiera.'}
+      </div>
+      <div class="note" style="margin-top:10px;font-size:11.5px">
+        El dashboard <code>app.py</code> lee este mismo tópico con otro <code>group_id</code>, así que tiene su propio puntero. Dos consumidores, dos ritmos, un solo log.</div>`;
+    }
+  }
+  return {main,insp};
+}
+
+/* ════════════ ESCENA 2 · FLINK ════════════ */
+const OPMAP={0:[0],1:[1,2],2:[3,4],3:[4],4:[5],5:[6],6:[7]};
+function sc2(step){
+  const ops=['from_source <span class="n">Kafka</span>','map <span class="n">deserialize</span>','filter <span class="n">CORRUPT</span>',
+             'key_by <span class="n">session_id</span>','window <span class="n">Tumbling 10s</span>','reduce <span class="n">acumula</span>',
+             'map <span class="n">vector</span>','sink_to <span class="n">Kafka</span>'];
+  const topo=ops.map((o,i)=>`<span class="op${(OPMAP[step]||[]).includes(i)?' act':''}">${o}</span>`)
+                .join('<span class="tar">→</span>');
+
+  const merged = EXP.nokeyby && step>=2;
+  let lanesHtml;
+  if(merged){
+    const all=[]; LANES.forEach(l=>l.evs.forEach(e=>all.push([l.sid,e])));
+    const tot=all.length, sum=all.reduce((a,[,e])=>a+e[1],0);
+    lanesHtml=`<div class="lane" style="--c:var(--faint)">
+      <span class="lid" style="color:var(--bad)">TODAS</span>
+      <div class="win">${all.map(([sid,e])=>`<div class="ev" style="background:${S[sid].c}">${EVAB[e[0]]}</div>`).join('')}</div></div>
+      <div class="warnbox" style="margin-top:9px"><b>Una sola ventana global.</b> clicks_count = ${tot} · avg_latency_ms = ${fmt(sum/tot)} — un promedio que no describe a nadie. El bot queda diluido entre los humanos y <b>la anomalía desaparece</b>.</div>`;
+  } else {
+    lanesHtml=LANES.map(l=>{
+      const s=S[l.sid];
+      // llenado progresivo: key_by ya reparte, el reloj termina de llenar
+      const vis = step<2 ? 0 : (step===2 ? Math.max(1,Math.ceil(l.evs.length*0.35))
+                              : (step===3 ? Math.max(2,Math.ceil(l.evs.length*0.75)) : l.evs.length));
+      const evs=l.evs.slice(0,vis).map((e,i)=>`<div class="ev${sel[2]===l.sid+':'+i?' sel':''}" data-act="s2" data-sid="${l.sid}" data-i="${i}" style="animation-delay:${(i*0.07).toFixed(2)}s">${EVAB[e[0]]}</div>`).join('');
+      const wait = (step>=2 && vis<l.evs.length) ? `<span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:8.5px;color:${s.c};opacity:.65">acumulando…</span>` : '';
+      return `<div class="lane" style="--c:${s.c}"><span class="lid">${s.id}</span>
+        <div class="win${step>=4?' closed':''}">${evs}${wait}</div>
+        <span class="chip" style="background:var(--surf2);color:var(--faint)">slot ${LANES.indexOf(l)%2+1}</span></div>`;
+    }).join('');
+  }
+
+  let vecs='';
+  if(step>=5&&!merged){
+    vecs=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:8px;margin-top:11px">`+
+      LANES.map(l=>{const s=S[l.sid],a=agg(l);
+      return `<div class="vecbox" style="--c:${s.c}"><div class="vh">${s.id}</div>
+        <table class="vtab">
+          <tr class="id"><td>session_id</td><td>${s.id}</td></tr>
+          <tr class="id"><td>user_id</td><td>${s.u}</td></tr>
+          <tr class="id"><td>ip_address</td><td>${s.ip}</td></tr>
+          <tr class="id"><td>device</td><td>${s.dev}</td></tr>
+          <tr class="mt sep"><td>clicks_count</td><td>${a.clicks}</td></tr>
+          <tr class="mt"><td>avg_latency_ms</td><td>${fmt(a.avg)}</td></tr>
+          <tr class="mt"><td>page_views_count</td><td>${a.pv}</td></tr>
+          <tr class="mt"><td>cart_adds_count</td><td>${a.ca}</td></tr>
+          <tr class="mt"><td>checkout_starts_count</td><td>${a.ck}</td></tr>
+          <tr class="mt"><td>purchases_count</td><td>${a.pu}</td></tr>
+        </table></div>`;}).join('')+`</div>
+      <div class="note" style="margin-top:9px"><span style="color:var(--info)">■</span> <b>4 campos de identidad</b> — viajan en la raíz del JSON, fuera de <code>feature_metrics</code>. <code>device</code> no es una de las 6 características, pero sin él R1 no podría funcionar.<br><span style="color:var(--ink)">■</span> <b>6 métricas</b> — una media y cinco sumas. Es lo único que Isolation Forest llega a ver.</div>`;
+  }
+
+  const pct=step<2?0:(step===2?30:(step===3?70:100));
+  const main=`<div class="eye">Capa 3 · Apache Flink (PyFlink)</div>
+    <div class="topo">${topo}</div>
+    <div data-from="2" class="clk">
+      <span class="pill" style="background:${merged?'rgba(255,129,104,.2)':'rgba(242,146,182,.18)'};color:${merged?'var(--bad)':'var(--fli)'}">ventanas activas: ${merged?'1 ✕':(step>=2?4:0)}</span>
+      <div class="clkbar"><i style="width:${pct}%"></i></div>
+      <span style="font-family:var(--mono);font-weight:700;color:var(--fli)">t = ${step<2?0:(step===2?3:(step===3?7:10))} s</span></div>
+    ${lanesHtml}
+    ${step>=2&&!merged?'<div class="lbl" style="margin-top:8px">pulsa cualquier evento para ver qué aporta al acumulador</div>':''}
+    ${vecs}
+    <div data-from="6" style="margin-top:10px" class="warnbox">
+      <b>Dos aclaraciones honestas.</b> Se usa <code>TumblingProcessingTimeWindows</code> con <code>no_watermarks()</code> → <b>processing time</b>, no event time. Y PyFlink se ejecuta <b>embebido en el host</b>; el clúster Docker es infraestructura objetivo.</div>`;
+
+  let insp;
+  if(!sel[2]||step<2||merged){
+    insp=`<div class="ihint">${merged?'Restaura el key_by para inspeccionar eventos.':'Pulsa un evento dentro de una ventana<br>para ver su aporte al acumulador.'}</div>`;
+  } else {
+    const [sid,ix]=sel[2].split(':'); const l=LANES.find(x=>x.sid===sid);
+    if(!l){insp=`<div class="ihint">Selecciona un evento.</div>`;}
+    else{
+      const i=+ix, [t,lat]=l.evs[i], s=S[sid], a=agg(l);
+      let run=0,rt=0,pv=0,ca=0,ck=0,pu=0;
+      for(let j=0;j<=i;j++){ run++; rt+=l.evs[j][1]; const t2=l.evs[j][0];
+        if(t2==='page_view')pv++; if(t2==='add_to_cart')ca++;
+        if(t2==='checkout_start')ck++; if(t2==='purchase')pu++; }
+      insp=`<div class="lbl">Evento seleccionado</div>
+      <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${s.c};margin:3px 0 9px">${s.id} · #${i+1}</div>
+      <table class="vtab" style="font-size:11px">
+        <tr class="id"><td>event_type</td><td>${t}</td></tr>
+        <tr class="id"><td>latency</td><td>${fmt0(lat)} ms</td></tr>
+      </table>
+      <div class="lbl" style="margin-top:13px">lo que aporta al reduce</div>
+      <div style="font-family:var(--mono);font-size:11px;background:var(--surf2);border-radius:8px;padding:9px 10px;margin-top:5px;line-height:1.9">
+        clicks &nbsp;&nbsp;<span style="color:var(--ok)">+1</span><br>
+        total_lat <span style="color:var(--ok)">+${fmt0(lat)}</span><br>
+        ${EVFIELD[t]} <span style="color:var(--ok)">+1</span>
+      </div>
+      <div class="lbl" style="margin-top:13px">acumulador tras este evento</div>
+      <table class="vtab" style="font-size:10.5px;background:var(--surf2);border-radius:8px;margin-top:5px">
+        <tr class="mt"><td style="padding-left:9px">clicks</td><td style="padding-right:9px">${run}</td></tr>
+        <tr class="mt"><td style="padding-left:9px">total_lat</td><td style="padding-right:9px">${fmt0(rt)}</td></tr>
+        <tr class="mt"><td style="padding-left:9px">page_views_count</td><td style="padding-right:9px">${pv}</td></tr>
+        <tr class="mt"><td style="padding-left:9px">cart_adds_count</td><td style="padding-right:9px">${ca}</td></tr>
+        <tr class="mt"><td style="padding-left:9px">checkout_starts_count</td><td style="padding-right:9px">${ck}</td></tr>
+        <tr class="mt"><td style="padding-left:9px">purchases_count</td><td style="padding-right:9px">${pu}</td></tr>
+        <tr><td style="padding:4px 9px 7px;color:var(--faint)" colspan="2">avg_latency_ms — todavía no existe</td></tr>
+      </table>
+      <div style="margin-top:11px;font-size:12px;color:var(--soft);line-height:1.5">
+        El <code>reduce</code> <b>no divide nunca</b>. Solo acumula numerador y denominador por separado, porque <b>los promedios no son asociativos</b>: promediar promedios daría un resultado distinto según el orden de combinación.</div>
+      ${i===l.evs.length-1?`<div class="note" style="margin-top:10px">
+        <b>Último evento de la ventana.</b> Al cerrar, <code>build_final_feature_vector</code> divide una sola vez:<br>
+        <span style="font-family:var(--mono);font-size:11.5px">${fmt0(a.tot)} / ${a.clicks} = ${fmt(a.avg)}</span></div>`:''}`;
+    }
+  }
+  return {main,insp};
+}
+
+/* ════════════ ESCENA 3 · DETECCIÓN HÍBRIDA ════════════ */
+function sc3(step){
+  const shown = VEC.filter(v=>{
+    if(filt==='all')return true;
+    return verdict(v).c===filt;
+  });
+  const rows=shown.map(v=>{
+    const V=verdict(v), R=rules(v);
+    return `<tr class="${sel[3]===v.id?'sel':''}" data-act="s3" data-id="${v.id}">
+      <td style="color:var(--ink)">${v.id}</td>
+      <td style="color:${v.dev==='bot_scraper'?'var(--bad)':'var(--faint)'}">${v.dev}</td>
+      <td>${v.cl}</td><td style="color:${v.lat>2000?'var(--bad)':'var(--soft)'}">${fmt(v.lat)}</td>
+      <td>${v.pv}</td><td>${v.ca}</td>
+      <td style="color:${v.ck>4?'var(--warn)':'var(--soft)'}">${v.ck}</td>
+      <td style="color:${v.pu===0&&v.ck>4?'var(--warn)':'var(--soft)'}">${v.pu}</td>
+      <td style="color:var(--faint)">${R.first||'—'}</td>
+      <td style="color:${v.ml?'var(--ml)':'var(--faint)'}">${v.ml?fmt(v.sc).replace('-','−'):'—'}</td>
+      <td><span class="vd ${V.c}">${V.t}</span></td></tr>`;
+  }).join('');
+
+  const cnt=c=>VEC.filter(v=>verdict(v).c===c).length;
+  const main=`<div class="eye">Capa 4 · anomaly_detector.py — detección híbrida</div>
+    <div data-from="0" class="stats">
+      <div class="st" style="--c:var(--warn)"><div class="sv">5.886</div><div class="sl">alertas por reglas<br><span style="color:var(--faint)">43,0 % · dato real</span></div></div>
+      <div class="st" style="--c:var(--ml)"><div class="sv">7.810</div><div class="sl">exclusivas de ML<br><span style="color:var(--faint)">57,0 % · dato real</span></div></div>
+      <div class="st" style="--c:var(--bad)"><div class="sv">686</div><div class="sl">detectadas por ambas<br><span style="color:var(--faint)">5,0 % · dato real</span></div></div>
+      <div class="st" style="--c:var(--ok)"><div class="sv">14</div><div class="sl">clics máximos observados<br><span style="color:var(--faint)">umbral R3 = 35</span></div></div>
+    </div>
+    <div data-from="5" class="filters">
+      ${[['all','todos ('+VEC.length+')'],['rule','solo regla ('+cnt('rule')+')'],['ml','solo ML ('+cnt('ml')+')'],['both','ambas ('+cnt('both')+')'],['none','sin alerta ('+cnt('none')+')']]
+        .map(([k,l])=>`<button class="fb${filt===k?' on':''}" data-act="filt" data-k="${k}">${l}</button>`).join('')}
+    </div>
+    <div class="vwrap"><table class="vt">
+      <tr><th>vector</th><th>device</th><th>clics</th><th>lat. media</th><th>PV</th><th>CA</th><th>CK</th><th>PU</th><th>regla</th><th>ML score</th><th>veredicto</th></tr>
+      ${rows}</table></div>
+    <div style="margin-top:9px" class="warnbox">
+      <b>Vectores ilustrativos.</b> Reconstruidos según las distribuciones del generador — el CSV de alertas solo conserva <code>Clicks</code> y <code>Avg_Latency_ms</code>, no los cuatro contadores por tipo de evento. Las tres cifras de arriba <b>sí</b> son medidas reales. Los <code>ML_Score</code> usan el rango observado (−0,67 a −0,60) pero <b>no están computados</b>: no cites estos 20 vectores como datos experimentales.</div>`;
+
+  const v=VEC.find(x=>x.id===sel[3])||VEC[6];
+  const R=rules(v), V=verdict(v), K=KIND[v.k]||{t:'borde',col:'var(--info)',bg:'rgba(119,173,255,.18)',d:'Caso construido para mostrar el efecto del umbral de R2.'};
+  const insp=`<div class="lbl">Vector seleccionado</div>
+    <div style="font-family:var(--mono);font-size:15px;font-weight:700;margin:3px 0 4px">${v.id}</div>
+    <span class="vd ${V.c}" style="font-size:9.5px">${V.t}</span>
+    <span class="chip" style="background:${K.bg};color:${K.col};margin-left:5px">${K.t}</span>
+
+    <div class="lbl" style="margin-top:13px">capa 1 · reglas heurísticas</div>
+    ${R.list.map(r=>`<div class="evalrow">
+      <div class="ic ${r.hit?'yes':'no'}">${r.hit?'✓':'✗'}</div>
+      <div><div class="et">${r.n} — ${r.lbl}</div>
+        <div class="ec">${r.cond}<br>${r.got}</div>
+        <div class="ed">${r.why}</div></div></div>`).join('')}
+    <div style="font-size:11.5px;color:var(--faint);margin-top:7px;line-height:1.5">
+      Se evalúan en orden con <b>cortocircuito</b>: la primera coincidencia corta la función.
+      ${R.fired?`Aquí disparó <b style="color:var(--warn)">${R.first}</b>, así que las siguientes ni se comprueban.`:'Ninguna coincidió, así que se evaluaron las tres.'}
+    </div>
+
+    <div class="lbl" style="margin-top:15px">capa 2 · isolation forest</div>
+    <div class="evalrow">
+      <div class="ic ${v.ml?'yes':'no'}">${v.ml?'✓':'✗'}</div>
+      <div><div class="et">ML — ${v.ml?'anomalía aislada':'dentro de lo normal'}</div>
+        <div class="ec">ml_anomaly_score = ${fmt(v.sc).replace('-','−')}</div>
+        <div class="ed">${v.ml
+          ? 'El vector queda aislado en pocos cortes del árbol: su <b>combinación</b> de valores es infrecuente aunque ningún campo aislado sea extremo.'
+          : 'El vector cae en la zona densa del espacio de 6 dimensiones. Hace falta un camino largo para aislarlo, así que se considera normal.'}</div></div></div>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.5">
+      La capa ML se ejecuta <b>siempre</b>, dispare o no una regla. No hay cortocircuito entre capas — por eso existen los casos «AMBAS».</div>
+
+    <div style="margin-top:13px;padding:9px 11px;border-radius:8px;background:var(--surf2);font-size:12px;color:var(--soft);line-height:1.5">
+      <b style="color:var(--ink)">Lectura del caso.</b><br>${K.d}</div>`;
+  return {main,insp};
+}
+
+/* ════════════ ESCENA 4 · DOCKER ════════════ */
+const CTN={
+ kafka:{n:'tfm-kafka',i:'confluentinc/cp-kafka:7.6.0',c:'var(--kaf)',
+  rows:[['puerto','9094:9094'],['modo','KRaft (broker,controller)'],['listener interno','kafka:9092'],['listener externo','localhost:9094'],['volumen','kafka_data']],
+  d:'El broker. Guarda los tres tópicos en el volumen <code>kafka_data</code>, así que el log sobrevive a un reinicio del contenedor.',
+  n2:'<b>Dos listeners, un solo broker.</b> El productor Faker corre en tu Windows y sale por <code>9094</code>; el <code>kafka-console-consumer</code> del README corre <i>dentro</i> del contenedor y usa <code>9092</code>. Es una pregunta clásica de tribunal.'},
+ jm:{n:'tfm-flink-jobmanager',i:'flink:1.18.1-scala_2.12',c:'var(--fli)',
+  rows:[['puerto','8081:8081'],['rol','coordinación de jobs'],['volumen','flink_data'],['Web UI','localhost:8081']],
+  d:'Coordina la ejecución: reparte tareas, dispara checkpoints y mantiene el estado del job.',
+  n2:'<b>Ojo aquí.</b> Este clúster está desplegado pero <b>PyFlink no se ejecuta dentro</b>. El procesamiento corre embebido en la máquina anfitriona. El clúster es infraestructura objetivo, y así debe declararse.'},
+ tm:{n:'tfm-flink-taskmanager',i:'flink:1.18.1-scala_2.12',c:'var(--fli)',
+  rows:[['task slots','2'],['rol','ejecución de operadores'],['restart','unless-stopped']],
+  d:'Ejecuta los operadores. Cada <i>task slot</i> es una unidad de paralelismo físico.',
+  n2:'<b>No confundas los dos paralelismos.</b> El número de <b>ventanas</b> lo dicta el tráfico (una por sesión activa). El número de <b>operadores</b> lo dicta el hardware. Varias claves comparten un slot, pero una clave siempre cae en el mismo.'},
+ host:{n:'máquina anfitriona',i:'Windows · Python 3',c:'var(--gen)',
+  rows:[['1_ingestion','faker_producer.py'],['2_processing','flink_processor.py'],['2_processing','anomaly_detector.py'],['3_dashboard','app.py']],
+  d:'Los cuatro scripts corren fuera de Docker, contra el broker publicado en <code>localhost:9094</code>.',
+  n2:'<b>Declararlo sin que te lo pregunten.</b> «El modelo de ejecución es el mismo que en el clúster; lo que cambia es la escala.» Es más sólido que dejar que lo descubra el tribunal.'}
+};
+function sc4(step){
+  const box=k=>{const c=CTN[k];return `<div class="ctn${sel[4]===k?' sel':''}" style="--c:${c.c}" data-act="s4" data-k="${k}">
+    <div class="cn">${c.n}</div><div class="ci">${c.i}</div></div>`;};
+  const main=`<div class="eye">Infraestructura · docker-compose.yml</div>
+    <div class="netbox"><span class="nl">network: tfm_network</span>
+      <div class="ctns">${box('kafka')}${box('jm')}${box('tm')}</div></div>
+    <div data-from="2" class="ctns">${box('host')}</div>
+    <div data-from="1" style="margin-top:11px" class="note">
+      Pulsa cualquier contenedor para ver su configuración real y la nota de defensa asociada.</div>
+    <div data-from="3" style="margin-top:9px" class="warnbox">
+      <b>Volúmenes.</b> <code>kafka_data</code> y <code>flink_data</code> son la contraparte física de la durabilidad que Kafka promete a nivel lógico. Sin ellos, un <code>docker compose down</code> se llevaría todo el log.</div>`;
+  const c=CTN[sel[4]];
+  const insp=`<div class="lbl">Componente</div>
+    <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${c.c};margin:3px 0 3px">${c.n}</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--faint);margin-bottom:11px">${c.i}</div>
+    <table class="vtab" style="font-size:10.5px">${c.rows.map(r=>`<tr class="mt"><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+    <div style="margin-top:11px;font-size:12.5px;color:var(--soft);line-height:1.5">${c.d}</div>
+    <div class="note" style="margin-top:10px">${c.n2}</div>`;
+  return {main,insp};
+}
+
+/* ════════════ ESCENA 5 · RECORRIDO ════════════ */
+const MORPH=[
+ {n:'Faker',c:'var(--gen)',f:'faker_producer.py',kb:'→ ecommerce-events',h:'evento crudo · 10 campos',
+  t:`{ "timestamp": 1755301842.117, "session_id": "sess_A7f3",
+  "user_id": "usr_04471", "ip_address": "190.44.12.8",
+  "device": "desktop", "event_type": "add_to_cart",
+  "page_url": "/carrito", "latency": 195,
+  "is_anomaly": false, "anomaly_type": null }`,
+  d:'La forma más rica del dato. Contiene la URL, el tipo de acción y la identidad completa. Todo lo que viene después es una reducción de esto.'},
+ {n:'Kafka',c:'var(--kaf)',f:'3 tópicos · log inmutable',kb:'bus central',h:'el mismo evento, ya direccionable',
+  t:`topic     = ecommerce-events
+partition = 0          ← hash("sess_A7f3")
+offset    = 41         ← permanente, nunca se reescribe
+payload   = { ...los mismos 10 campos... }`,
+  d:'El contenido no cambia: gana <b>coordenadas</b>. A partir de aquí el evento tiene dirección permanente y puede releerse cuantas veces haga falta, por cuantos consumidores haga falta.'},
+ {n:'Flink',c:'var(--fli)',f:'flink_processor.py',kb:'→ retail-feature-vectors',h:'vector de características',
+  t:`{ "session_id": "sess_A7f3", "device": "desktop",
+  "feature_metrics": {
+    "clicks_count": 5,           "avg_latency_ms": 195.60,
+    "page_views_count": 2,       "cart_adds_count": 1,
+    "checkout_starts_count": 1,  "purchases_count": 1 } }`,
+  d:'La mayor pérdida de detalle, y es deliberada. Varios eventos de 10 campos se comprimen en <b>6 números</b>. Desaparecen la URL y la IP; queda solo el <i>comportamiento</i>. Esa reducción es lo que hace posible el machine learning: Isolation Forest necesita un espacio numérico de dimensión fija.'},
+ {n:'Detector',c:'var(--det)',f:'anomaly_detector.py',kb:'→ ecommerce-alerts',h:'alerta · un juicio',
+  t:`{ "session_id": "sess_A7f3",
+  "detection_source": {
+    "rule_layer_triggered": false,
+    "rule_reason": null,
+    "ml_layer_triggered": false,
+    "ml_anomaly_score": -0.4102 } }`,
+  d:'El dato deja de describir comportamiento y pasa a ser <b>una decisión</b>: dos banderas y una puntuación. Isolation Forest necesita 40 muestras de calentamiento antes de poder predecir; hasta entonces solo acumula.'},
+ {n:'Dashboard',c:'var(--das)',f:'app.py · Streamlit',kb:'grafo + SQLite',h:'observabilidad',
+  t:`arista del grafo : /carrito ──► /checkout
+fila forense     : sess_A7f3 · sin alerta
+KPI              : sesiones activas · alertas/min
+persistencia     : SQLite (sobrevive al recargar)`,
+  d:'<b>El dashboard consume dos fuentes.</b> Las alertas del detector, y —por separado, con su propio <code>group_id</code>— el tópico <code>ecommerce-events</code> para construir el grafo de navegación. Por eso el grafo conserva la <code>page_url</code> que el vector descartó: son dos consumidores independientes del mismo log.'}
+];
+function sc5(step){
+  const m=MORPH[sel[5]];
+  const main=`<div class="eye">Recapitulación · el recorrido completo del dato</div>
+    <div class="layers">${MORPH.map((l,i)=>`<div class="layer${sel[5]===i?' hot':''}" style="--c:${l.c}" data-act="s5" data-i="${i}">
+      <div class="ln">${l.n}</div><div class="lf">${l.f}</div><div class="kb">${l.kb}</div></div>`).join('')}</div>
+    <div data-from="1" style="margin-top:13px" class="note">
+      <b>Kafka aparece tres veces.</b> No es un componente del pipeline: es el tejido que lo sostiene. Cada capa consume de un tópico y produce en otro, sin conocer jamás la identidad de sus vecinos.</div>
+    <div data-from="2" style="margin-top:9px" class="warnbox">
+      <b>Dos consumidores del mismo tópico.</b> El detector se queda con el comportamiento numérico y descarta la URL; el grafo se queda con la URL y descarta la latencia. Ninguno estorba al otro porque el log no se consume: se lee.</div>
+    <div data-from="3" style="margin-top:9px" class="note">
+      <b>Latencia de detección.</b> Una anomalía no puede detectarse antes de que cierre su ventana. Si un bot empieza en el segundo 1, la alerta no puede salir antes del segundo 10. Es el precio de la ventana de 10 s.</div>`;
+  const insp=`<div class="lbl">Forma del dato en esta capa</div>
+    <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${m.c};margin:3px 0 9px">${m.n}</div>
+    <div class="jbox"><div class="jh"><span>${m.h}</span></div>
+      <pre style="white-space:pre-wrap;font-size:9.8px">${m.t.replace(/</g,'&lt;')}</pre></div>
+    <div style="margin-top:11px;font-size:12.5px;color:var(--soft);line-height:1.55">${m.d}</div>`;
+  return {main,insp};
+}
+
+
+/* ════════════ ESCENA · VECTORES EN KAFKA ════════════ */
+const VSTREAM=[
+ {sid:'sess_A7f3',w:1,cl:5, lat:195.60,pv:2,ca:1,ck:1,pu:1},
+ {sid:'sess_B1c9',w:1,cl:7, lat:9.57,  pv:7,ca:0,ck:0,pu:0},
+ {sid:'sess_C4e2',w:1,cl:12,lat:121.17,pv:3,ca:2,ck:7,pu:0},
+ {sid:'sess_E2b7',w:1,cl:6, lat:5000.00,pv:3,ca:1,ck:1,pu:1},
+ {sid:'sess_A7f3',w:2,cl:4, lat:187.25,pv:3,ca:1,ck:0,pu:0},
+ {sid:'sess_C4e2',w:2,cl:11,lat:118.90,pv:2,ca:1,ck:8,pu:0},
+ {sid:'sess_B1c9',w:2,cl:9, lat:6.44,  pv:9,ca:0,ck:0,pu:0},
+ {sid:'sess_E2b7',w:2,cl:8, lat:4310.75,pv:5,ca:2,ck:1,pu:0},
+ {sid:'sess_C4e2',w:3,cl:9, lat:126.40,pv:2,ca:1,ck:6,pu:0},
+ {sid:'sess_A7f3',w:3,cl:3, lat:203.00,pv:2,ca:0,ck:0,pu:1},
+ {sid:'sess_B1c9',w:3,cl:11,lat:5.18,  pv:11,ca:0,ck:0,pu:0}
+];
+
+function sc6(step){
+  const N=parts;
+  const cells=Array.from({length:N},()=>[]);
+  const vis = step===0 ? 4 : VSTREAM.length;
+  VSTREAM.slice(0,vis).forEach((v,i)=>{
+    const p = N===1 ? 0 : (i%3);          // sin clave → round-robin
+    cells[p].push({v,i,p,off:cells[p].length});
+  });
+
+  const tapes=cells.map((list,p)=>{
+    const inner=list.length?list.map(c=>
+      `<div class="cell${sel[6]===c.i?' sel':''}" style="--c:${S[c.v.sid].c};width:40px" data-act="s6" data-i="${c.i}">
+        <b>${c.v.sid.slice(5,8)}</b><span>w${c.v.w}</span></div>`).join('')
+      :'<div class="cell ghost">·</div>';
+    return `<div class="prow"><span class="pn">partition ${p}</span><div class="tape">${inner}</div></div>`;
+  }).join('');
+
+  const tog=`<div class="filters" style="margin-bottom:11px">
+    <span class="lbl" style="align-self:center;margin-right:4px">vista</span>
+    <button class="fb${N===1?' on':''}" data-act="parts" data-n="1">1 partición · despliegue real</button>
+    <button class="fb${N===3?' on':''}" data-act="parts" data-n="3">3 particiones · al escalar</button></div>`;
+
+  // localizar dinámicamente una sesión dispersa y otra agrupada por casualidad
+  let disp='', agru='';
+  if(N===3){
+    const porSid={};
+    [].concat(...cells).forEach(c=>{(porSid[c.v.sid]=porSid[c.v.sid]||new Set()).add(c.p);});
+    for(const k in porSid){ if(porSid[k].size>1 && !disp) disp=k; if(porSid[k].size===1 && !agru) agru=k; }
+  }
+  const contraste = N===3
+   ? `<div class="warnbox" style="margin-top:10px"><b>Sin clave no hay agrupación garantizada.</b> Compáralo con la escena 2: allí cada sesión ocupaba <b>siempre</b> su propia fila, por diseño. Aquí <code>${disp}</code> queda repartida entre varias particiones.
+      ${agru?`<p style="margin:6px 0 0">Y fíjate en <code>${agru}</code>: quedó toda en una sola fila — pero <b>por casualidad</b>, no por garantía. El reparto por turnos puede coincidir; no lo asegura.</p>`:''}
+      <p style="margin:6px 0 0">La causa está en el código: el <code>KafkaRecordSerializationSchema</code> del sink solo define <code>setValueSerializationSchema</code>. <b>No hay clave</b>, así que no hay hash — Kafka reparte por turnos.</p>
+      <p style="margin:6px 0 0"><b>Y no importa.</b> Con 1 partición o con 3 el resultado es idéntico, porque el detector evalúa cada vector aislado. Aquí la partición es indiferente; en <code>ecommerce-events</code> era imprescindible.</p></div>`
+   : `<div class="note" style="margin-top:10px"><b>Con una partición no se nota la diferencia.</b> Todo aterriza en la misma cinta, igual que en <code>ecommerce-events</code>.
+      <p style="margin:6px 0 0">Cambia a <b>3 particiones</b> para ver el contraste: aquí los colores <b>no</b> se agruparían, porque el sink no envía clave.</p></div>`;
+
+  const main=`<div class="eye">Kafka · retail-feature-vectors — el tópico intermedio</div>
+    ${tog}
+    <div data-from="0" class="prow" style="margin-bottom:10px;flex-wrap:wrap">
+      <span class="chip" style="background:color-mix(in srgb,var(--fli) 20%,transparent);color:var(--fli)">Flink · sink_to()</span>
+      <span class="tar">→</span>
+      <span class="chip" style="background:var(--surf2);color:var(--soft)">localhost:9094</span>
+      <span class="tar">→</span>
+      <span class="chip" style="background:color-mix(in srgb,var(--kaf) 20%,transparent);color:var(--kaf)">retail-feature-vectors</span>
+      <span class="tar">→</span>
+      <span class="chip" style="background:color-mix(in srgb,var(--det) 20%,transparent);color:var(--det)">detector</span></div>
+    <div class="tbox">
+      <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px;flex-wrap:wrap">
+        <span class="lbl">topic</span>
+        <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--kaf)">retail-feature-vectors</span>
+        <span class="chip" style="background:rgba(255,129,104,.18);color:var(--bad)">sin clave</span>
+      </div>
+      ${tapes}
+    </div>
+    <div data-from="1">${contraste}</div>
+    <div data-from="2" style="margin-top:9px" class="note">
+      <b>Cada mensaje ya es una unidad completa.</b> En <code>ecommerce-events</code> la clave era imprescindible: había que juntar 12 eventos dispersos para reconstruir una sesión. Aquí cada vector llega cerrado, con sus 6 métricas calculadas. El detector lo evalúa aislado, sin necesitar nada de sus vecinos ni del orden de llegada.
+      <p style="margin:6px 0 0">Pulsa cualquier vector para inspeccionarlo.</p></div>
+    <div data-from="3" style="margin-top:9px" class="warnbox">
+      <b>La regla general.</b> Se particiona por clave cuando el consumidor aguas abajo necesita <b>acumular estado agrupado</b>. El detector es <i>stateless</i> respecto a las sesiones — su único estado es el modelo de Isolation Forest, que es global. Por eso no le importa el orden ni la partición.</div>`;
+
+  let insp;
+  if(sel[6]===null||sel[6]===undefined){
+    insp=`<div class="ihint">Pulsa un vector del log<br>para ver sus 6 métricas.</div>`;
+  } else {
+    const f=[].concat(...cells).find(c=>c.i===sel[6]);
+    if(!f){ insp=`<div class="ihint">Ese vector no está en la vista actual.</div>`; }
+    else{
+      const v=f.v, sX=S[v.sid], K=KIND[sX.k];
+      const otras=VSTREAM.filter(x=>x.sid===v.sid).map(x=>'w'+x.w).join(', ');
+      insp=`<div class="lbl">Vector seleccionado</div>
+      <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${sX.c};margin:3px 0 3px">${v.sid}</div>
+      <div style="font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-bottom:10px">ventana ${v.w} · partición ${f.p} · offset ${f.off}</div>
+      <table class="vtab" style="font-size:10.5px">
+        <tr class="id"><td>device</td><td>${sX.dev}</td></tr>
+        <tr class="mt sep"><td>clicks_count</td><td>${v.cl}</td></tr>
+        <tr class="mt"><td>avg_latency_ms</td><td>${fmt(v.lat)}</td></tr>
+        <tr class="mt"><td>page_views_count</td><td>${v.pv}</td></tr>
+        <tr class="mt"><td>cart_adds_count</td><td>${v.ca}</td></tr>
+        <tr class="mt"><td>checkout_starts_count</td><td>${v.ck}</td></tr>
+        <tr class="mt"><td>purchases_count</td><td>${v.pu}</td></tr>
+      </table>
+      <div style="margin-top:11px;font-size:12px;color:var(--soft);line-height:1.5">
+        Esta sesión emitió vectores en las ventanas <b>${otras}</b>. ${N===3?'Sin clave, cada uno cayó donde tocaba por turno — sin ninguna garantía de que compartan partición.':'Con una partición todos comparten cinta. Al escalar, el reparto sería por turnos: sin clave, no habría agrupación garantizada.'}
+      </div>
+      <div class="note" style="margin-top:10px">
+        <b>Cada ventana se juzga por separado.</b> El detector no sabe que esta misma sesión ya emitió otros vectores. Las ventanas <i>tumbling</i> son amnésicas: al cerrar, el estado se vacía.</div>
+      ${sX.k!=='normal'?`<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--surf2);font-size:11.5px;color:var(--soft);line-height:1.5">
+        <b style="color:${K.col};font-family:var(--mono);font-size:10px">${K.t}</b><br>${K.sig}</div>`:''}`;
+    }
+  }
+  return {main,insp};
+}
+
+/* ════════════ GUION ════════════ */
+const SCENES=[
+{n:'Ingesta',s:'Faker',f:sc0,steps:[
+ {t:'Diez sesiones vivas en memoria',b:`El generador mantiene un <b>grupo fijo de sesiones concurrentes</b>. Cada una nace con <code>session_id</code>, <code>user_id</code>, IP y <code>device</code> fijados en el constructor, y esos valores <b>no cambian</b> mientras viva.<p>Pulsa cualquier tarjeta: el panel derecho muestra su JSON completo y qué la hace normal o anómala.</p>`},
+ {t:'Cada acción emite un JSON de 10 campos',b:`No es «un JSON por clic»: el generador emite cinco tipos de evento — <code>page_view</code>, <code>add_to_cart</code>, <code>checkout_start</code>, <code>purchase</code> y <code>search</code>.<p>Cuatro campos son <b>identidad</b> y no cambian; cuatro describen <b>qué está haciendo ahora</b> (<code>timestamp</code>, <code>event_type</code>, <code>page_url</code>, <code>latency</code>). Los dos últimos son auditoría.</p>`},
+ {t:'Tres tipos de anomalía, tres problemas de negocio distintos',b:`Compara las tres tarjetas marcadas. <b>No son tres tipos de bot</b>: solo una lo es.<p><code>bot</code> es automatización; <code>high_latency</code> es infraestructura degradada; <code>checkout_drop</code> es dinero perdido en la pasarela de pago. Cada una exige una capa de detección distinta.</p>`},
+ {t:'La etiqueta se decide al nacer, no por evento',b:`Moneda sesgada al 8 % en el constructor, antes del primer evento. Si sale cara, se elige uniformemente entre los tres tipos.<p><b>Consecuencia:</b> el <i>ground truth</i> es <b>por sesión</b>. No hay sesiones mitad limpias. Y eso encaja con que la unidad de análisis del detector también sea la sesión-ventana.</p>`},
+ {t:'Salida al puerto 9094',b:`El productor publica en <code>ecommerce-events</code> con <code>key=event.session_id</code>. A partir de aquí se desentiende: no sabe quién leerá, ni cuándo, ni cuántos consumidores habrá.<p>Ese desacoplamiento es el primer regalo de Kafka.</p>`,
+  quiz:{q:'Una sesión resultó ser bot. ¿En qué momento se le asignó esa etiqueta?',a:'En <code>SessionGenerator.__init__</code>, <b>antes del primer evento</b>. Los eventos no se etiquetan uno a uno: heredan la decisión de la sesión. Además, <code>bot_scraper</code> <b>sobrescribe</b> el <code>device</code> original en cada evento emitido.'}}
+]},
+{n:'El log',s:'Kafka',f:sc1,steps:[
+ {t:'Un tópico son varias cintas independientes',b:`<code>ecommerce-events</code> se divide en <b>particiones</b>. Cada una es una cinta donde solo se escribe <b>al final</b>. Nada se inserta en medio, nada se borra al leerse.<p>Varias particiones = varios lectores en paralelo. De ahí sale la escalabilidad de Kafka.</p>`},
+ {t:'El enrutamiento es aritmética, no coordinación',b:`Kafka calcula <code>hash(session_id) % nº particiones</code>. Es <b>determinista</b>: la misma clave da siempre el mismo entero, y por tanto la misma partición. No hay tabla de búsqueda ni consenso entre nodos — es aritmética pura.<p><b>Hash único ≠ partición única.</b> El módulo colapsa millones de valores en 3 (o en 1), así que varias sesiones comparten partición. No es una colisión: es el diseño.</p>`},
+ {t:'Append: el evento recibe su offset',b:`Se anexa al final y recibe un número de posición que <b>ya no cambia jamás</b>. Los offsets se cuentan <b>por partición</b>: el offset 3 de la partición 0 y el de la 2 son eventos distintos.<p>Pulsa cualquier celda para inspeccionar su procedencia.</p>`},
+ {t:'Misma sesión, misma fila — pero la fila va mezclada',b:`Mira los colores agrupados por partición. Ahora fíjate en lo contrario: <b>una partición transporta varias sesiones entrelazadas</b>.<p><b>Kafka coloca; Flink agrupa.</b> Kafka garantiza que los eventos de una sesión no se dispersen y lleguen ordenados. Esa garantía es lo que permite que el <code>key_by</code> de Flink agrupe <b>en memoria local</b>, sin coordinarse con otros nodos.</p>`},
+ {t:'Dos punteros sobre la misma cinta',b:`El productor escribe en la cabeza. El consumidor va detrás con su propia marca, y la diferencia es el <b>consumer lag</b>.<p>Lo esencial: <b>leer no destruye</b>. El dashboard <code>app.py</code> lee este mismo tópico con otro <code>group_id</code> y su propio ritmo, sin estorbar a Flink.</p>`},
+ {t:'Experimento — se cae el consumidor',b:`El puntero de Flink se congela, el productor sigue escribiendo y el lag crece. Al reanudar, retoma en su offset exacto: ni un evento perdido, ninguno duplicado.<p>Esto es la <b>reproducibilidad</b>: rebobinar al offset 0 permite reprocesar todo el histórico con otros parámetros del modelo.</p>`,exp:{k:'crash',on:'Reanudar el consumidor',off:'Simular caída del consumidor'}},
+ {t:'Experimento — quitar la clave de partición',b:`Kafka reparte por turnos. Los colores se <b>desparraman</b> entre las tres particiones.<p>Consecuencia: los clics de una sesión los leen operadores distintos y ninguno tiene la sesión completa. El vector saldría partido en trozos. <b>Por eso se particiona por session_id.</b></p>`,exp:{k:'nokey',on:'Restaurar el particionado',off:'Quitar la clave session_id'},
+  quiz:{q:'Si los eventos no se borran cuando un consumidor los lee, ¿cuándo desaparecen?',a:'Por <b>política de retención</b> (tiempo o tamaño), nunca por consumo. Kafka <b>almacena y sirve</b>; quien lee es el consumidor, y leer solo avanza su propio puntero. Eso es lo que permite el <i>replay</i> y que varios consumidores independientes lean el mismo log.'}}
+]},
+{n:'Ventanas',s:'Flink',f:sc2,steps:[
+ {t:'La topología, operador por operador',b:`Flink no ejecuta el script línea a línea: compila un <b>grafo de operadores (DAG)</b> y hace fluir los eventos por él. Esta es la cadena real de <code>flink_processor.py</code>.`},
+ {t:'Limpieza: deserializar y descartar basura',b:`<code>map</code> convierte cada cadena JSON en tupla tipada; si viene rota devuelve <code>"CORRUPT_RECORD"</code> en lugar de reventar el job. <code>filter</code> las descarta.<p>Decisión de diseño: <b>un evento malformado no debe tumbar el pipeline</b>.</p>`},
+ {t:'key_by abre una ventana por sesión',b:`Aquí está lo que más se malinterpreta. <code>key_by</code> va <b>antes</b> que <code>window</code>: Flink no crea una ventana global cada 10 s, crea <b>una por cada session_id activo</b>.<p>Cuatro sesiones → cuatro ventanas simultáneas. Con 500 sesiones habría 500. <b>Ninguna ventana mezcla usuarios jamás.</b></p>`,exp:{k:'nokeyby',on:'Restaurar key_by',off:'¿Y si quitamos el key_by?'}},
+ {t:'El reloj corre y el reduce acumula',b:`Las cuatro ventanas se llenan a la vez, cada una solo con sus eventos. El <code>reduce</code> <b>no espera al final</b>: combina cada evento con el acumulador conforme llega.<p>Pulsa cualquier evento para ver exactamente qué suma. En memoria solo vive un acumulador por sesión, no la lista de eventos — por eso escala.</p>`},
+ {t:'Cierre: cálculo continuo, emisión discreta',b:`A los 10 s las cuatro ventanas cierran <b>simultáneamente</b>. Hasta ese momento no salió nada aguas abajo.<p>Y ahora sí se divide: <code>total_lat / clicks</code>. El <code>reduce</code> nunca dividió, porque <b>los promedios no son asociativos</b> y el orden de combinación no está garantizado en paralelo.</p>`},
+ {t:'El vector: 4 campos de identidad + 6 métricas',b:`Fíjate en los dos bloques de color. Los cuatro campos azules viajan en la raíz del JSON; las seis métricas van dentro de <code>feature_metrics</code>.<p><b>Solo las seis métricas entran a Isolation Forest.</b> <code>device</code> viaja pero no es una característica — por eso R1 puede leerlo y el modelo no.</p>`},
+ {t:'Al sink — y dos aclaraciones honestas',b:`El flujo se bifurca: <code>print()</code> a consola para auditoría y <code>sink_to()</code> hacia <code>retail-feature-vectors</code>. Kafka aparece por <b>segunda vez</b>: Flink es productor, no solo consumidor.<p><b>Mismo broker, mismo puerto.</b> <code>localhost:9094</code> tanto para leer como para escribir — <code>set_bootstrap_servers()</code> aparece dos veces en el código (líneas 146 y 159) con el mismo valor. Solo cambia el nombre del tópico. Que use <code>9094</code> y no <code>kafka:9092</code> confirma que PyFlink corre en el host, no dentro del clúster.</p><p><b>Y el sink NO define clave.</b> El serializador solo escribe el valor: no hay <code>setKeySerializationSchema</code>, así que no hay hash ni enrutamiento determinista. Los vectores se reparten por turnos.</p>`,
+  quiz:{q:'Una sesión navega 45 segundos. ¿Cuántos vectores genera?',a:'<b>5 o 6</b>, según el desfase respecto a las fronteras del reloj — las ventanas <i>tumbling</i> están alineadas a intervalos fijos, no al inicio de la sesión. 45 s son 4 ventanas completas más 5 s de sobrante: si el desfase es de 0 a 5 s caben en 5 ventanas; de 6 a 9 s se desbordan a 6.<p>Y en la práctica puede ser menos: solo se emite vector si hubo <b>al menos un evento</b> en ese tramo. Las ventanas son amnésicas — al cerrar, el estado se vacía y cada vector se evalúa por separado.</p>'}}
+]},
+{n:'Vectores',s:'Kafka 2',f:sc6,steps:[
+ {t:'Flink también produce — mismo broker, otro tópico',b:`El <code>sink_to()</code> escribe en <code>retail-feature-vectors</code> a través de <code>localhost:9094</code>: <b>el mismo puerto</b> que usa para leer. <code>set_bootstrap_servers()</code> aparece dos veces en el código con el mismo valor; solo cambia el nombre del tópico.<p>Cuatro sesiones activas cerraron su ventana a la vez → cuatro vectores publicados de golpe.</p>`},
+ {t:'Sin clave: aquí Kafka reparte por turnos',b:`Diferencia clave con <code>ecommerce-events</code>. Allí el productor enviaba <code>key=session_id</code> y el hash agrupaba. Aquí el serializador del sink <b>solo define el valor</b> — no hay clave, no hay hash.<p>Usa el conmutador para ver el contraste. Ojo al matiz: sin clave <b>no hay agrupación garantizada</b>. Alguna sesión puede quedar toda en la misma fila, pero por casualidad del reparto por turnos — no porque Kafka lo asegure.</p>`},
+ {t:'¿Y por qué no importa?',b:`Porque el trabajo pesado ya está hecho. Cada mensaje es un vector <b>cerrado y autosuficiente</b>, no un fragmento que haya que juntar con otros.<p>Pulsa cualquier vector: verás sus 6 métricas ya calculadas y de qué ventana viene. El detector no necesita nada más.</p>`},
+ {t:'La regla general del particionado',b:`Se particiona por clave cuando el consumidor necesita <b>acumular estado agrupado</b>. Flink lo necesitaba; el detector no.<p>Su único estado es el modelo de Isolation Forest, que es <b>global</b> — un solo modelo entrenado con las primeras 40 muestras de todas las sesiones mezcladas. No hay un modelo por sesión, así que el orden y la partición le son indiferentes.</p>`,
+  quiz:{q:'¿Cuándo SÍ harías falta clave en este segundo tópico?',a:'Si quisieras detectar patrones <b>entre ventanas</b> de la misma sesión — por ejemplo «la latencia lleva tres ventanas subiendo». Ahí el consumidor tendría que acumular estado por sesión, y necesitarías <code>session_id</code> como clave para garantizar orden.<p>Es exactamente la limitación de las ventanas amnésicas que el TFM declara como trabajo futuro: requeriría <code>ProcessFunction</code> con estado o <i>session windows</i>.</p>'}}
+]},
+{n:'Detección',s:'Híbrida',f:sc3,steps:[
+ {t:'Dos capas independientes, no una cascada',b:`El detector consume <b>vectores, no eventos</b>. Nunca ve un JSON crudo — por eso puede comparar contra <code>avg_latency_ms</code>, un valor que no existía en el evento original.<p>Las dos capas se evalúan <b>siempre</b>, sin cortocircuito entre ellas. Por eso hay casos detectados por ambas.</p>`},
+ {t:'R1 — la firma explícita',b:`<code>device == "bot_scraper"</code>. Determinista, instantánea, explicable. Captura el <b>100 % de los bots</b> en tus datos reales: 3.011 de 3.011.<p>Filtra por «solo regla» en la tabla para ver los tres ejemplos de bot.</p>`},
+ {t:'R2 — degradación sostenida, no picos',b:`<code>avg_latency_ms &gt; 2000.0</code> compara el <b>promedio de la ventana</b>. Una sesión con latencias 180, 205, 195, 8000, 170, 190 promedia 1.490 ms y <b>no dispara</b>, pese al pico de 8 segundos.<p>Mira <code>v_19</code> (1.980,40 ms) y <code>v_20</code> (2.010,75 ms): 30 milisegundos separan una alerta de un silencio.</p>`},
+ {t:'R3 — la regla huérfana',b:`<code>clicks_count &gt; 35</code>. <b>Nunca se dispara.</b> El generador limita cada sesión a <code>max_events = randint(4, 15)</code>, y el máximo observado en los 13.696 registros es 14.<p>Y no basta con subir el techo: ningún perfil de anomalía modela una <b>ráfaga</b>. Haría falta un cuarto tipo, <i>click flood</i> — está declarado como trabajo futuro.</p>`},
+ {t:'Isolation Forest — la forma, no el valor',b:`Filtra por «solo ML». Mira <code>v_07</code> a <code>v_11</code>: dispositivo real, latencia ~120 ms, clics corrientes. <b>Ningún campo aislado es anómalo.</b><p>Lo raro es la geometría: en un embudo sano cada etapa tiene menos eventos que la anterior. Aquí <code>checkout_starts</code> (7) supera a <code>cart_adds</code> (2). El embudo se invierte. Eso no lo expresa ningún umbral.</p>`},
+ {t:'Los cuatro veredictos',b:`Recorre la tabla con los filtros. <b>REGLA</b>: firma conocida. <b>SOLO ML</b>: patrón sutil. <b>AMBAS</b>: anomalías severas donde convergen. <b>Sin alerta</b>: pasa las dos capas.<p>Fíjate en <code>v_16</code>, <code>v_17</code> y <code>v_18</code>: sesiones normales que el ML marca igualmente. Con <code>contamination = 0.08</code>, el modelo marca por construcción una fracción de todo lo que ve — son <b>falsos positivos</b>, y conviene reconocerlos.</p>`},
+ {t:'Lo que dicen tus datos reales',b:`Reglas 5.886 (43,0 %) · ML exclusivo 7.810 (57,0 %) · solape 686 (5,0 %). Y un hallazgo verificado: <b>Isolation Forest no marcó ni un solo bot</b> — 0 de 3.011.<p>No es que una capa sea mejor. <b>Ninguna puede sustituir a la otra</b>: quitar las reglas dejaría 3.011 bots invisibles; quitar el ML dejaría 7.810 anomalías sin detectar. Eso es H2 y H3.</p>`,
+  quiz:{q:'¿Por qué el ML no puede detectar un bot por su campo device?',a:'Porque <code>device</code> <b>no es una de las 6 características</b>. Viaja en la raíz del JSON, fuera de <code>feature_metrics</code>, y el modelo solo recibe el array numérico. Codificarlo (one-hot) sería posible, pero equivaldría a reimplantar R1 disfrazada de característica, sin aportar generalización.'}}
+]},
+{n:'Docker',s:'Infra',f:sc4,steps:[
+ {t:'Tres contenedores en una red privada',b:`Dentro de <code>tfm_network</code> los contenedores se llaman por nombre, no por IP. Pulsa cualquiera para ver su configuración real.`},
+ {t:'La frontera de red: dos listeners',b:`Kafka expone dos puertas. Selecciona <b>tfm-kafka</b> en el panel: ahí está la explicación de por qué el productor usa 9094 y el consumidor de consola del README usa 9092.`},
+ {t:'Qué corre fuera de Docker',b:`Los cuatro scripts de Python — <b>incluido PyFlink</b> — se ejecutan en la máquina anfitriona. El clúster Flink está desplegado como <b>infraestructura objetivo</b>.<p>Selecciona el bloque de la máquina anfitriona para la frase exacta que conviene decir en la defensa.</p>`},
+ {t:'Persistencia y arranque',b:`Los volúmenes hacen que el log sobreviva al reinicio. Y el broker corre en modo <b>KRaft</b>: si alguien pregunta dónde está ZooKeeper, la respuesta es que Kafka lo eliminó desde la versión 3.x.`,
+  quiz:{q:'¿Cuántas particiones tienen tus tópicos, y por qué no más?',a:'<b>Una, en los tres.</b> No hay ningún <code>kafka-topics --create</code> en el repositorio ni <code>KAFKA_NUM_PARTITIONS</code> en el compose, así que los tópicos se autocrean con el valor por defecto del broker (<code>num.partitions = 1</code>).<p><b>Por qué no más:</b> con un solo consumidor en una sola máquina, tres particiones no habrían generado paralelismo real — habrían simulado una escala que la infraestructura no tenía. Y con una partición el orden es <b>total</b>, lo que hace los resultados exactamente reproducibles.</p><p><b>El remate:</b> el mecanismo sí está implementado (<code>key=session_id</code>). Escalar es añadir una variable de entorno, sin cambiar una línea de código. Esa es la propiedad que valida el diseño.</p>'}}
+]},
+{n:'Recorrido',s:'Completo',f:sc5,steps:[
+ {t:'Pulsa cada capa y observa cómo cambia la forma',b:`El mismo dato atraviesa cinco capas y en cada una <b>pierde detalle a cambio de significado</b>: de 10 campos con URL e IP, a 6 números, a dos banderas booleanas.`},
+ {t:'Kafka aparece tres veces',b:`Faker → <code>ecommerce-events</code> → Flink → <code>retail-feature-vectors</code> → detector → <code>ecommerce-alerts</code> → dashboard.<p>Ningún componente habla directamente con otro. Todos conocen solo un nombre de tópico.</p>`},
+ {t:'Dos consumidores, dos propósitos',b:`El dashboard no solo pinta alertas: lee <code>ecommerce-events</code> por su cuenta para construir el grafo de navegación, normalizando cada URL a un nodo del embudo y acumulando aristas ponderadas en SQLite.<p>Por eso el vector puede descartar <code>page_url</code> sin que el grafo pierda nada.</p>`},
+ {t:'El límite estructural',b:`Ninguna anomalía puede detectarse antes de que cierre su ventana. Es el precio de los 10 segundos, y es una decisión de diseño defendible: ventanas más cortas dan alertas más rápidas con menos evidencia; más largas, lo contrario.`},
+ {t:'La frase de cierre',b:`<i>«Kafka no es un componente del pipeline: es el tejido que lo sostiene. Cada capa consume de un tópico y produce en otro, sin conocer jamás la identidad de sus vecinos.»</i><p>Consulta el cajón <b>Objetivos e hipótesis</b> para repasar qué queda validado, qué es parcial y qué es trabajo futuro.</p>`,
+  quiz:{q:'¿Por qué el vector descarta page_url si el TFM analiza grafos de navegación?',a:'Porque son <b>dos ramas paralelas</b>. La rama de detección solo necesita comportamiento numérico. El grafo se construye aparte, en <code>app.py</code>, leyendo directamente <code>ecommerce-events</code> con su propio <code>group_id</code>. Otra ventaja del log inmutable: dos consumidores, dos propósitos, el mismo flujo.'}}
+]}];
+
+/* ════════════ CAJONES ════════════ */
+const GLO=[
+ ['tumbling window','se pronuncia <b>támbling</b>','Ventana fija de 10 s, sin solapamiento. Cada evento cae en una sola.'],
+ ['sliding window','','Ventana solapada. Contaría el mismo clic varias veces — por eso no se usa aquí.'],
+ ['session window','','Se cierra por inactividad, no por reloj. Alternativa contemplada como trabajo futuro.'],
+ ['processing time','tiempo de procesamiento','Cuándo el operador procesa el evento. <b>Es la noción que usa este TFM.</b>'],
+ ['event time','tiempo de evento','Cuándo ocurrió el hecho en el navegador. Flink lo soporta; aquí <b>no se usa</b>.'],
+ ['ingestion time','','Cuándo el evento entra al sistema. Punto intermedio entre las dos anteriores.'],
+ ['Complex Event Processing','CEP — no confundir','Biblioteca de Flink para detectar patrones en flujos. <b>No se usa en este proyecto.</b>','warn'],
+ ['watermark','marca de agua','Señal que declara «ya no espero eventos anteriores a t». Desactivada: <code>no_watermarks()</code>.'],
+ ['key_by','particionado por clave','Agrupa el flujo por <code>session_id</code>. Crea una ventana independiente por clave.'],
+ ['offset','desplazamiento','Número de posición permanente dentro de una partición. No cambia nunca.'],
+ ['topic','tópico','Canal con nombre. Aquí hay tres.'],
+ ['partition','partición','Subdivisión del tópico. Garantiza orden dentro de sí, no entre particiones.'],
+ ['consumer lag','','Distancia entre lo escrito y lo leído. Si crece sin parar, el consumidor no da abasto.'],
+ ['consumer group','grupo de consumo','Identificador que lleva su propio puntero. Flink y el dashboard usan grupos distintos.'],
+ ['task slot','ranura de procesamiento','Unidad de paralelismo <b>físico</b>. Varias claves comparten un slot.'],
+ ['source / sink','fuente / sumidero','Por dónde entra y sale el dato del job de Flink.'],
+ ['reduce','','Agregación incremental. Combina eventos conforme llegan, sin guardarlos todos.'],
+ ['feature vector','vector de características','Las 6 métricas por sesión y ventana que consume Isolation Forest.'],
+ ['contamination','','Proporción de anomalías que Isolation Forest asume al fijar su umbral. Aquí <code>0.08</code>.'],
+ ['warmup','calentamiento','Las <code>40</code> primeras muestras que entrenan el modelo. <b>No es el tamaño del dataset.</b>'],
+ ['ABS checkpoint','snapshot asíncrono','Instantánea consistente de estado + offsets. Habilita <i>exactly-once</i>.'],
+ ['ground truth','verdad fundamental','La respuesta correcta conocida de antemano, contra la que se mide el acierto.'],
+ ['throughput','caudal','Eventos procesados por segundo.'],
+ ['pipeline','se pronuncia <b>PÁIP-lain</b>','Canalización de procesamiento. Acento en la primera sílaba.'],
+ ['num.partitions','','Particiones por defecto de un tópico autocreado. Vale <b>1</b> y no se sobrescribe en este proyecto.'],
+ ['auto.create.topics.enable','','Activado por defecto: el broker crea el tópico al primer envío del productor.'],
+ ['KRaft','','Modo de consenso propio de Kafka desde la 3.x. Elimina ZooKeeper.']
+];
+
+const OBJ=[
+ {h:'Objetivo general'},
+ {t:'OG',d:'Diseñar, desarrollar y validar una arquitectura de <i>stream processing</i> para la observabilidad en tiempo real del comportamiento de usuarios en e-commerce, integrando teoría de grafos y aprendizaje no supervisado para la detección proactiva de anomalías.',b:'ok',bl:'cumplido',n:'La arquitectura de cinco capas está implementada y es reproducible.'},
+ {h:'Objetivos específicos'},
+ {t:'OE1 — Pipeline de ingesta escalable',d:'Kafka alimentado por un generador Faker que simula tráfico concurrente sin comprometer el RGPD.',b:'ok',bl:'cumplido',
+  n:'<b>1 partición por tópico</b> (autocreación con el valor por defecto del broker). El mecanismo de particionado por clave sí está implementado: <code>key=event.session_id</code> en el productor. Escalar es configuración, no código. El TFM nunca afirma un número concreto → documento a salvo. Pedir a Benjamín la salida de <code>kafka-topics --describe</code> para tenerla vista.'},
+ {t:'OE2 — Procesamiento en flujo y modelado topológico',d:'Flink convierte eventos crudos en vectores agregados por sesión; el comportamiento se modela como grafo dirigido ponderado.',b:'par',bl:'parcial',
+  n:'El vector se produce correctamente. El grafo se construye en <code>app.py</code>, no en Flink, y su dinamismo en tiempo real está declarado como <b>limitación</b>, no como funcionalidad entregada.'},
+ {t:'OE3 — Detección online de anomalías',d:'Isolation Forest sobre ventanas temporales, sin datos etiquetados previos.',b:'ok',bl:'cumplido',
+  n:'Con <code>warmup = 40</code> y <code>contamination = 0.08</code>. Hallazgo verificado: el modelo no marcó ningún bot (0 de 3.011); el mecanismo no está caracterizado formalmente.'},
+ {t:'OE4 — Interfaz de observabilidad (MVP)',d:'Dashboard Streamlit con KPI en tiempo real, consola forense y grafo de navegación.',b:'ok',bl:'cumplido',
+  n:'Dos motores de render: Matplotlib (estable, recomendado) y PyVis (interactivo). El botón «Limpiar memoria gráfica» recarga desde SQLite — documentado como refresco de vista, no como borrado real.'},
+ {t:'OE5 — Evaluar rendimiento e impacto',d:'Dos KPI: latencia extremo a extremo &lt; 3 s, y reducción &gt; 50 % del <i>time-to-insight</i> frente a batch.',b:'par',bl:'parcial',
+  n:'<b>El punto más atacable.</b> La latencia se observó operativamente. La reducción del 50 % <b>no está medida</b> contra un pipeline batch real: se argumenta estructuralmente. Respuesta preparada: «No implementamos un pipeline batch de contraste; medirlo exigiría desplegar la misma lógica en un job por lotes. Está identificado como trabajo futuro.»'},
+ {h:'Hipótesis'},
+ {t:'H1 — Rendimiento en tiempo real',d:'La latencia de decisión —del cierre de ventana a la publicación de la alerta— es de milisegundos, muy por debajo de 3 s.',b:'par',bl:'sustentada con salvedad',
+  n:'El propio texto del TFM declara que la comparación con batch «se sostiene de forma argumentada […] a la espera de una medición empírica directa». Está bien redactado: es honesto, pero prepárate para que lo señalen.'},
+ {t:'H2 — Superioridad de la detección híbrida',d:'El enfoque híbrido supera en Recall y F1 a cualquiera de las dos estrategias aisladas. <b>Hipótesis central.</b>',b:'ok',bl:'validada',
+  n:'F1 híbrido 1,000 frente a 0,601 solo reglas (+39,9 pp). <b>Matiz obligatorio:</b> Precisión = Recall = 1,000 son artefactos de un dataset construido íntegramente con sesiones anómalas. Decláralo tú antes de que lo pregunten.'},
+ {t:'H3 — Complementariedad de las capas',d:'Las capas operan sobre subconjuntos mayoritariamente disjuntos y convergen solo en las anomalías más severas.',b:'ok',bl:'validada',
+  n:'<b>La mejor sustentada de las tres.</b> Solape 686 de 13.696 (5,0 %), y las alertas exclusivas corresponden a patrones diferenciados: reglas → 3.011 bots; ML → 7.810 patrones sutiles. Cumple los dos criterios de validación que la hipótesis exige.'},
+ {h:'Limitaciones declaradas'},
+ {t:'R3 nunca se dispara',d:'<code>clicks_count &gt; 35</code> con un techo real de 14.',b:'fut',bl:'trabajo futuro',
+  n:'Causa estructural: <code>max_events = randint(4, 15)</code>. Propuesta documentada: un cuarto perfil de anomalía <i>click flood</i>. La regla es defendible como umbral de producción.'},
+ {t:'PyFlink embebido en el host',d:'El clúster Docker (JobManager + TaskManager) está desplegado pero no ejecuta el job.',b:'fut',bl:'declarado',
+  n:'Frase preparada: «El modelo de paralelismo es idéntico; lo que cambia es la escala.»'},
+ {t:'Grafo en tiempo real',d:'El título dice «Análisis de Grafos en Tiempo Real».',b:'fut',bl:'limitación',
+  n:'El grafo se construye en vivo desde el flujo, pero su dinamismo visual es limitado. Neo4j y el <i>layout</i> estable quedan como trabajo futuro. <b>No lo presentes como funcionalidad entregada.</b>'},
+ {t:'Ventanas amnésicas',d:'No hay estado entre ventanas de una misma sesión.',b:'fut',bl:'trabajo futuro',
+  n:'Impide detectar degradaciones graduales que nunca cruzan el umbral dentro de una sola ventana. Requeriría <code>ProcessFunction</code> con estado o <i>session windows</i>.'},
+ {t:'ML ciego a los bots',d:'0 de 3.011 sesiones bot marcadas por Isolation Forest.',b:'fut',bl:'no caracterizado',
+  n:'Hecho verificado sobre el CSV; el código no lo suprime. El mecanismo <b>no está explicado</b>. Para cerrarlo haría falta volcar <code>retail-feature-vectors</code> y reproducir el entrenamiento. Respuesta honesta: «Es un comportamiento observado que no hemos caracterizado formalmente.»'}
+];
+
+/* ════════════ RENDER ════════════ */
+function render(){
+  const S_=SCENES[sc], step=S_.steps[st], out=S_.f(st);
+  $('#stage').innerHTML=`<section class="scene live"><div class="sbody">
+    <div class="main">${out.main}</div><div class="insp">${out.insp}</div></div></section>`;
+  requestAnimationFrame(()=>{
+    $$('.scene [data-from]').forEach(n=>{
+      const f=+n.dataset.from; if(st>=f) n.classList.add('on');
+    });
+  });
+
+  $('#sTitle').textContent=step.t;
+  $('#sBody').innerHTML=step.b;
+
+  const side=$('#side'); side.innerHTML='';
+  const expBloq = (sc===1 && st===6 && parts===1);
+  if(expBloq){
+    const d=document.createElement('div'); d.className='note';
+    d.innerHTML='<b>Experimento no disponible con 1 partición.</b> No hay nada que dispersar: con una sola cinta, quitar la clave no cambia el destino. Cambia a la vista de <b>3 particiones</b> para verlo.';
+    side.appendChild(d);
+  }
+  if(step.exp && !expBloq){
+    const b=document.createElement('button');
+    b.className='expb'+(EXP[step.exp.k]?' on':'');
+    b.textContent=(EXP[step.exp.k]?'↩ '+step.exp.on:'⚡ '+step.exp.off);
+    b.onclick=()=>{EXP[step.exp.k]=!EXP[step.exp.k];render();};
+    side.appendChild(b);
+  }
+  if(step.quiz){
+    const q=document.createElement('div'); q.className='quiz';
+    q.innerHTML=`<p>${step.quiz.q}</p><button>Ver respuesta</button><div class="ans">${step.quiz.a}</div>`;
+    q.querySelector('button').onclick=()=>{q.classList.toggle('open');
+      q.querySelector('button').textContent=q.classList.contains('open')?'Ocultar':'Ver respuesta';};
+    side.appendChild(q);
+  }
+
+  $$('.tab').forEach((t,i)=>t.classList.toggle('sel',i===sc));
+  $('#dots').innerHTML=S_.steps.map((_,i)=>`<div class="dot ${i===st?'on':(i<st?'past':'')}" data-d="${i}"></div>`).join('');
+  $('#pos').textContent=`${st+1} / ${S_.steps.length}`;
+  $('#prev').disabled=(sc===0&&st===0);
+  $('#next').disabled=(sc===SCENES.length-1&&st===S_.steps.length-1);
+  $('#next').textContent=(st===S_.steps.length-1&&sc<SCENES.length-1)?`${SCENES[sc+1].s} →`:'Siguiente →';
+}
+function go(d){
+  st+=d;
+  if(st<0){ if(sc>0){sc--;st=SCENES[sc].steps.length-1;} else st=0; }
+  if(st>=SCENES[sc].steps.length){ if(sc<SCENES.length-1){sc++;st=0;} else st=SCENES[sc].steps.length-1; }
+  render(); $('#stage').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ════════════ EVENTOS ════════════ */
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-act]'); 
+  if(a){
+    const k=a.dataset.act;
+    if(k==='s0') sel[0]=a.dataset.id;
+    if(k==='s1') sel[1]=+a.dataset.i;
+    if(k==='s2') sel[2]=a.dataset.sid+':'+a.dataset.i;
+    if(k==='s3') sel[3]=a.dataset.id;
+    if(k==='s4') sel[4]=a.dataset.k;
+    if(k==='s5') sel[5]=+a.dataset.i;
+    if(k==='s6') sel[6]=+a.dataset.i;
+    if(k==='filt') filt=a.dataset.k;
+    if(k==='parts'){ parts=+a.dataset.n; sel[1]=null; if(parts===1) EXP.nokey=false; }
+    render(); return;
+  }
+  const d=e.target.closest('.dot'); if(d){ st=+d.dataset.d; render(); return; }
+  if(e.target.matches('[data-close]')) closeAll();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight')go(1); if(e.key==='ArrowLeft')go(-1); if(e.key==='Escape')closeAll();
+});
+
+/* ════════════ INIT ════════════ */
+$('#tabs').innerHTML=SCENES.map((s,i)=>`<button class="tab" data-i="${i}"><b>${i+1}</b>${s.s}</button>`).join('');
+$$('.tab').forEach(t=>t.onclick=()=>{sc=+t.dataset.i;st=0;render();});
+$('#prev').onclick=()=>go(-1);
+$('#next').onclick=()=>go(1);
+
+$('#gloBody').innerHTML='<table>'+GLO.map(g=>
+  `<tr class="${g[3]||''}"><td>${g[0]}${g[1]?`<em>${g[1]}</em>`:''}</td><td>${g[2]}</td></tr>`).join('')+'</table>';
+
+$('#objBody').innerHTML=OBJ.map(o=>{
+  if(o.h) return `<div class="oh">${o.h}</div>`;
+  return `<div class="oi"><div class="ot">${o.t}<span class="badge b-${o.b}">${o.bl}</span></div>
+    <div class="od">${o.d}</div><div class="on ${o.b}">${o.n}</div></div>`;
+}).join('')+'<div style="padding:14px 17px;font-size:11px;color:var(--faint);line-height:1.6">Los estados reflejan lo verificado contra el código y el CSV <code>FINAL_historical_alerts.csv</code> (13.696 registros). Las cifras marcadas como reales son trazables; los 20 vectores de la escena 4 son ilustrativos.</div>';
+
+function closeAll(){$$('.drw').forEach(d=>d.classList.remove('open'));$('#scrim').classList.remove('open');}
+function open(id){closeAll();$(id).classList.add('open');$('#scrim').classList.add('open');}
+$('#gloBtn').onclick=()=>open('#drwGlo');
+$('#objBtn').onclick=()=>open('#drwObj');
+$('#scrim').onclick=closeAll;
+
+render();
+
+</script>
+</body>
+</html>
