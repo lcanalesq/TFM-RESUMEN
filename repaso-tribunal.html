@@ -326,6 +326,267 @@ COSTOS
 <p>Para exactly-once haría cuatro: habilitar checkpointing con almacenamiento en disco, que el source retome desde los offsets confirmados en lugar de leer desde el final, configurar el sink de Kafka en modo transaccional exactly-once, y que el detector lea solo mensajes confirmados. Así, tras una caída, cada evento se refleja una sola vez: ni se pierde ni se duplica.</p>
 <p>El costo es latencia, y la garantía llegaría hasta el tópico de vectores; para cubrir las alertas habría que hacer idempotente el detector. Son cambios de configuración, no de arquitectura.</p></div>
 <div class="careful"><strong>Cuida esto.</strong> Exactly-once no es "leer todos los eventos" (eso es at-least-once): es ni perder ni duplicar. Di que los resultados serían "correctos y reproducibles", no "más reales".</div>`
+},
+{
+ t:"Isolation Forest y los bots", topic:"Detector · modelo",
+ q:"Isolation Forest no marcó como anómalo ninguno de los 3.011 vectores de bots. Solo los detectó CRITICAL_RULE. ¿Por qué el modelo no los vio? ¿Es un fallo del algoritmo o de su diseño?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Es un fallo de diseño, no del algoritmo. El modelo solo recibe las seis métricas numéricas; el campo device, que usa la regla, viaja en el mensaje pero no entra al vector del modelo.</p>
+<p>Aun así, los bots tienen una firma numérica clara: unos 10 ms de latencia frente a unos 120 de una sesión normal. El problema está en el warmup: 40 vectores sin filtrar. Isolation Forest solo corta entre el mínimo y el máximo de lo que vio al entrenar. Si en el warmup no hubo bots, no hay cortes por debajo de la sesión normal más rápida, y el bot sigue su mismo camino en el árbol. Además, lo más probable es que entraran vectores de alta latencia, que estiraron el rango hasta 8.000 ms y concentraron los cortes en la zona alta. Por eso el modelo detecta la latencia alta, pero no la baja.</p>
+<p>Lo mejoraríamos con un warmup más grande y filtrado por las reglas; como complemento, logaritmo de la latencia y características de navegación. Y justifica el enfoque híbrido: la regla cubre lo que el modelo no ve.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th>Decisión de diseño</th><th>Efecto</th></tr>
+<tr><td><code>device</code> fuera del vector</td><td>El modelo no ve la etiqueta bot_scraper</td></tr>
+<tr><td>Warmup sin filtrar (40)</td><td>Sin bots: no hay cortes en la zona baja. Con alta latencia: rango estirado</td></tr>
+<tr><td>Latencia sin transformar</td><td>Rango 1–8.000 ms: casi ningún corte cae en 1–20 ms</td></tr>
+</table></div>
+<ul class="pts">
+<li>Isolation Forest no mide distancias: mide cuántos cortes hacen falta para <span class="hl">aislar</span> un punto. Un valor por debajo del mínimo del warmup sigue el camino del punto más bajo.</li>
+<li>Evidencia: las 686 alertas de ambas capas tienen latencia media de ~5.055 ms. El modelo detecta el extremo alto, nunca el bajo.</li>
+<li>Logaritmo (ilustrativo, nodo raíz): lineal, la franja 1–20 ms es 19/8.000 ≈ 0,2 % del rango; en log10, 1,3/3,9 ≈ 33 %.</li>
+<li>Con warmup filtrado, el logaritmo pasa a ser opcional. A los bots seguiría sin aislarlos, pero ya los captura R1; el modelo se concentra en lo que las reglas no describen.</li>
+<li>Normalizar (min-max, z-score) no cambia nada en Isolation Forest: es lineal y el modelo corta cada métrica en su propio rango. El logaritmo sí, porque no es lineal.</li>
+<li>Navegación: % de transiciones fuera de ARISTAS_ESPERADAS, páginas distintas / eventos, tiempo entre eventos. Lleva la lógica del grafo, hoy solo visual, al modelo.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Arranca por <code>device</code>. Las etiquetas is_anomaly / anomaly_type no tienen nada que ver aquí. Di "estiró el rango" y "no quedó aislado", no "distorsionó" ni "no fue filtrado". No afirmes qué vectores entraron en el warmup: no se guardó. No digas "prueba que el híbrido da mejores resultados": di "las capas se complementan".</div>`
+},
+{
+ t:"Flink frente a Spark", topic:"Motor de streaming",
+ q:"En su trabajo eligieron Apache Flink frente a Spark Structured Streaming. ¿Cuál es la diferencia de fondo entre los dos motores y por qué Flink encaja mejor en su caso?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Spark nació batch: trata el streaming como una sucesión de micro-lotes, cada uno procesado como un trabajo batch. Flink nació streaming: trata el batch como un caso particular, un flujo acotado con inicio y fin. Hoy ambos tienen event time, watermarks y exactly-once.</p>
+<p>Elegimos Flink por tres razones. Su estado nativo por clave: el acumulador de cada sesión se actualiza con cada evento, no por lote. Un solo motor de streaming, sin capa batch, coherente con eliminar la arquitectura Lambda. Y margen de evolución: las limitaciones del prototipo se resuelven activando capacidades del mismo motor, y si quisiéramos alertar evento a evento, sin esperar el cierre de la ventana, Flink lo permite de forma nativa.</p>
+<p>Con ventanas de 10 segundos, la latencia no es lo decisivo; lo decisivo es el estado por sesión.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th>Aspecto</th><th>Spark Structured Streaming</th><th>Flink</th></tr>
+<tr><td>Origen</td><td>Batch; añadió streaming</td><td>Streaming; batch = flujo acotado</td></tr>
+<tr><td>Ejecución</td><td>Micro-lotes</td><td>Evento a evento</td></tr>
+<tr><td>Estado</td><td>Por lote</td><td>Nativo por clave, con cada evento</td></tr>
+<tr><td>Event time · watermarks · exactly-once</td><td>Sí</td><td>Sí</td></tr>
+</table></div>
+<h3>Margen de evolución en su pipeline</h3>
+<div class="tbl"><table>
+<tr><th>Hoy</th><th>Cambio en Flink</th></tr>
+<tr><td>Processing time</td><td>Ventanas de event time + WatermarkStrategy</td></tr>
+<tr><td>Sin checkpointing</td><td><code>enable_checkpointing(...)</code></td></tr>
+<tr><td>Sink sin garantía</td><td><code>set_delivery_guarantee(EXACTLY_ONCE)</code></td></tr>
+<tr><td>Ventana fija de 10 s</td><td>Alertas por evento con temporizadores</td></tr>
+</table></div>
+<ul class="pts">
+<li>Flujo acotado (batch) ≠ ventana. La ventana es un corte temporal de un flujo no acotado. El pipeline usa ventanas y no hace batch.</li>
+<li>Referencia: Carbone et al. (2015).</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Spark trata el streaming como micro-lotes, no al revés. No justifiques con "el título dice stream processing": Spark también hace streaming. Di "estado nativo por clave", no "gestor de estado". No digas que Spark no tiene event time, checkpoints o exactly-once. Tabla 5: P99 ~20 ms es cita de Carbone, no medición propia; Gelly no se usa (el grafo va con NetworkX). Di "watermarks".</div>`
+},
+{
+ t:"PyFlink embebido y clúster ocioso", topic:"Despliegue",
+ q:"En su docker-compose levantan un JobManager y un TaskManager de Flink, pero el procesador se ejecuta con PyFlink desde el propio host. ¿Dónde corre realmente su job de Flink? ¿Qué papel cumplen esos dos contenedores?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>El job corre en el host. Al ejecutar el script, el proceso Python lanza una JVM y, dentro de ella, un MiniCluster con un JobManager y un TaskManager reales, con paralelismo 1. No es una simulación: es Flink completo en un solo proceso.</p>
+<p>Los contenedores de Flink están operativos pero ociosos, preparados para el modo clúster. Lo hicimos así porque simplificó la depuración y porque la imagen oficial de Flink no trae Python; usar el clúster exigía construir una imagen propia.</p>
+<p>Desde el host, el job se conecta a Kafka por localhost:9094. Si corriera en el clúster, se conectaría por kafka:9092. Lo declaramos en 5.2.2, y la prospectiva en 8.2 propone empaquetar Python en la imagen.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th></th><th>Embebido (real)</th><th>Clúster (preparado)</th></tr>
+<tr><td>Dónde corre</td><td>JVM lanzada por Python en el host</td><td>flink-jobmanager + flink-taskmanager</td></tr>
+<tr><td>Kafka</td><td>localhost:9094 (EXTERNAL)</td><td>kafka:9092 (INTERNAL)</td></tr>
+<tr><td>UI 8081</td><td>Carga, 2 slots libres, 0 jobs</td><td>Mostraría el job</td></tr>
+</table></div>
+<ul class="pts">
+<li>Depurar = probar y corregir durante el desarrollo. Embebido, los vectores del <code>print</code> y los errores salen en la misma terminal; en clúster, en los logs del contenedor del TaskManager.</li>
+<li>UI 8081 = interfaz web de Flink, la sirve el JobManager. La memoria (tras la Tabla 8) dice que muestra pipeline, throughput y checkpoints: no ocurre, y sin checkpointing esa vista estaría vacía incluso en clúster.</li>
+<li>Kafka sí corre en contenedor; el host lo alcanza porque el 9094 está publicado.</li>
+<li>La figura "slot 1 / slot 2" sale del TaskManager ocioso. Ejecución real: un slot.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> El MiniCluster se crea dentro de la JVM, no al revés. No digas "PyFlink simula Flink". No justifiques con "más ligero": no se midió. El 9092 es de Kafka, no de Flink, y el job "se conecta a Kafka", no al revés. No digas "el 8081 no funciona". Confirmar con Benjamín las razones del modo embebido.</div>`
+},
+{
+ t:"Una partición y escalabilidad", topic:"Kafka · escala",
+ q:"Sus tópicos de Kafka tienen una sola partición. ¿Qué implica eso para el paralelismo y la escalabilidad del pipeline? Si mañana el tráfico se multiplicara por cien, ¿qué cambiarían?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Con una partición solo hay un lector activo por grupo de consumidores: aunque subamos el paralelismo de Flink, solo una subtarea lee; las demás quedan ociosas. Además, un solo broker sin réplica: si cae, se detiene el pipeline.</p>
+<p>Si el tráfico se multiplicara por cien, unos 3.000 eventos por segundo, Kafka no sería el primer cuello de botella. Lo serían Flink con paralelismo 1 y el detector en Python, que procesa un vector a la vez y escribe en CSV y SQLite por cada alerta.</p>
+<p>Cambiaríamos tres capas. En Kafka, varias particiones definidas desde el inicio y tres brokers con réplica: las particiones dan paralelismo; la réplica, disponibilidad. En Flink, paralelismo igual al número de particiones, en clúster. En el detector, varias instancias en el mismo grupo, con un modelo entrenado de forma centralizada.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th>Capa</th><th>Hoy</th><th>Tráfico ×100</th></tr>
+<tr><td>Kafka</td><td>1 broker, RF 1, 1 partición</td><td>N particiones, 3 brokers, RF 3</td></tr>
+<tr><td>Flink</td><td>Paralelismo 1, embebido</td><td>Paralelismo = N, clúster</td></tr>
+<tr><td>Detector</td><td>1 proceso, escribe por alerta</td><td>N instancias, modelo compartido</td></tr>
+</table></div>
+<ul class="pts">
+<li>Particiones y lectores van juntos. 3 particiones con 1 lector = mismo rendimiento: un hilo recorre las tres. Solo queda preparado para escalar.</li>
+<li>El reparto ocurre solo dentro del mismo grupo. Grupos distintos leen el tópico completo (Flink y dashboard sobre ecommerce-events). Flink y el detector leen tópicos distintos: no se reparten nada.</li>
+<li>En Flink no se lanza otro job: se sube el paralelismo del mismo job (<code>env.set_parallelism</code>, hoy 1). Necesita slots: el TaskManager del compose tiene 2.</li>
+<li>A 30 eventos/s una subtarea sobra. La ventana no limita la capacidad: solo define cuándo se emite.</li>
+<li>Broker = servidor de Kafka. Réplica = líder + seguidoras en otros brokers: disponibilidad, no velocidad. Con RF 1, acks=all equivale a acks=1.</li>
+<li>Aumentar particiones después cambia hash(session_id) mod N y rompe el orden por sesión.</li>
+</ul>
+<pre>Diagnóstico → 1 partición = 1 lector por grupo; cuello: Flink y detector
+Kafka      → particiones desde el inicio + 3 brokers con réplica
+Flink      → paralelismo = particiones
+Detector   → instancias en el mismo grupo, modelo centralizado</pre>
+<div class="careful"><strong>Cuida esto.</strong> No digas "leen uno a la vez": solo uno lee. No digas que más particiones "aceleran" por sí solas. Di "throughput" (zrú-put) o "capacidad de procesamiento", "broker" (no "server"), "paralelismo del job" (no "job number"). No digas que Kafka es el cuello de botella a 3.000 eventos/s.</div>`
+},
+{
+ t:"El ground truth que no se usó", topic:"Evaluación · riesgo",
+ q:"En 5.3.1 dicen que el generador marca cada evento con is_anomaly y anomaly_type, y que sirven de ground truth para la evaluación de 5.8. Pero 5.8 calcula las métricas solo sobre las alertas del CSV. Y en 8.1 afirman que el híbrido 'recupera la totalidad de las anomalías inyectadas'. ¿Por qué no lo usaron? ¿Se sostiene esa afirmación?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>La observación es correcta; es una limitación de la evaluación. Tiene dos causas: Flink no propaga las etiquetas en el vector, así que no llegan al detector; y el CSV solo guarda las alertas emitidas, no todos los vectores. Sin eso, no podemos contar falsos positivos ni falsos negativos.</p>
+<p>Por eso evaluamos sobre el universo de alertas: la precisión es 1 en todas las capas y el recall del híbrido es 1, por construcción. Y la frase de 8.1 debe leerse como la totalidad de las alertas emitidas, no de las anomalías inyectadas.</p>
+<p>Lo que sí observamos es que ninguna capa por sí sola cubre todas las alertas: el 95 % las marcó una sola capa. Eso indica que se complementan.</p>
+<p>La mejora: llevar las etiquetas en el mensaje de Flink, solo para evaluar, y guardar todos los vectores para calcular la matriz de confusión real por tipo de anomalía.</p></div>
+<h3>Las 4 piezas</h3>
+<pre>1. Reconozco     → limitación de la evaluación
+2. Causa         → Flink no propaga etiquetas + CSV solo guarda alertas
+3. Consecuencia  → 5.8 mide cobertura; 8.1 = "alertas emitidas"
+4. Corrección    → etiquetas en el mensaje + todos los vectores
+                   + matriz de confusión</pre>
+<h3>Alerta frente a anomalía</h3>
+<div class="tbl"><table>
+<tr><th></th><th>Es anomalía</th><th>No es anomalía</th></tr>
+<tr><td>Hay alerta</td><td>VP</td><td>FP</td></tr>
+<tr><td>No hay alerta</td><td>FN</td><td>VN</td></tr>
+</table></div>
+<ul class="pts">
+<li>El CSV solo tiene la fila "hay alerta", sin poder separar VP de FP. La fila de abajo no se guardó.</li>
+<li>El registro se decide en <code>if rule_triggered or ml_triggered:</code>; sin <code>else</code>, los vectores sin alerta no se guardan.</li>
+<li>Posibles FN: checkout_drop no tiene regla propia. Posibles FP: alertas del modelo con latencia mediana 120,7 ms y 6–14 clics.</li>
+<li>Precisión 1,000 en todas las capas; F1: reglas 0,601, IF 0,766, híbrido 1,000 (difiere el recall: 0,430 y 0,620).</li>
+<li>Diseño: <code>is_anomaly</code> (OR en el reduce) y <code>anomaly_type</code> en un bloque <code>ground_truth</code> del JSON. El detector separa X (6 métricas → modelo) de y (etiquetas → se guardan) y compara por session_id.</li>
+<li>Flink emite un único JSON por sesión y ventana; el detector lo usa dos veces (reglas y modelo). Ambas capas evalúan cada vector: por eso hay 686 de ambas.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Etiqueta = evaluar, NUNCA detectar: ni el modelo ni las reglas deben leerlas (fuga de información; en producción no existen). No digas "con las etiquetas la capa 1 habría detectado todo". Reconócelo como limitación antes de hablar de mejora. Di "alertas", no "anomalías". No digas "mejores resultados" sin ground truth.</div>`
+},
+{
+ t:"Cómo decide Isolation Forest", topic:"Detector · modelo",
+ q:"Expliquen cómo decide Isolation Forest si una sesión es anómala. ¿Qué hacen los 100 árboles, qué significa la profundidad y cómo se convierte eso en el score que aparece en su CSV?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Isolation Forest no aprende lo normal: mide qué tan fácil es aislar un punto. Cada uno de sus 100 árboles, el valor por defecto, parte los datos con cortes al azar: una métrica y un valor entre su mínimo y su máximo. Un punto anómalo se aísla con pocos cortes; uno normal necesita muchos.</p>
+<p>Cada vector obtiene su profundidad en los 100 árboles; se promedian, y la fórmula de Liu, Ting y Zhou convierte esa profundidad media en un score. En scikit-learn es negativo: más negativo, más anómalo.</p>
+<p>El umbral se fijó al entrenar: el percentil 8 de los scores de los 40 vectores del warmup, porque contamination es 0,08; deja unos 3 por debajo. Lo inferimos en torno a −0,60. Todo vector nuevo con score menor se marca como alerta.</p></div>
+<h3>Del árbol al score</h3>
+<pre>100 árboles → 100 profundidades → promedio E[h] → fórmula → 1 score
+
+s(x) = 2^( −E[h(x)] / c(n) )     c(40) ≈ 6,53
+scikit-learn devuelve −s</pre>
+<div class="tbl"><table>
+<tr><th>Vector (ilustrativo)</th><th class="num">E[h]</th><th class="num">Score</th></tr>
+<tr><td>Normal</td><td class="num">5,5</td><td class="num">−0,56</td></tr>
+<tr><td>En el borde</td><td class="num">4,8</td><td class="num">−0,60</td></tr>
+<tr><td>Anómalo</td><td class="num">3,2</td><td class="num">−0,71</td></tr>
+</table></div>
+<ul class="pts">
+<li>100 árboles: <code>n_estimators</code> por defecto; no está escrito en <code>IsolationForest(contamination=0.08, random_state=42)</code>.</li>
+<li>Muestra por árbol min(256, n) = 40. Profundidad máx. ⌈log2 40⌉ = 6: depende de las muestras, no de las 6 variables.</li>
+<li>Umbral = percentil, no promedio. 40 × 8 % = 3,2. Es −0,60 porque es el score menos negativo entre las alertas del modelo (offset_ no se guardó). Alertas ML: −0,68 a −0,60.</li>
+<li>Los 40 vectores: <code>warmup_samples_required</code>; el <code>fit</code> se dispara al llegar a 40.</li>
+<li>ML_Score = 0,0 en el CSV no es un score real: es el valor cuando el modelo no disparó.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Se promedian profundidades, no scores. Autores: LIU, Ting y ZHOU (2008). No digas "el score decide": decide <code>predict</code> contra el umbral. Contamination es 0,08 (8 %), no 0,8. Las sesiones normales quedan cerca de −0,5, no "cerca de cero". Di "el menos negativo", no "el menor negativo".</div>`
+},
+{
+ t:"Warmup y reproducibilidad", topic:"Detector · modelo",
+ q:"Su modelo se entrena con 40 vectores y contamination = 0,08, y en 5.5.4 afirman que random_state=42 hace el modelo reproducible entre ejecuciones. ¿Es realmente reproducible? ¿Y por qué 40 vectores?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>random_state=42 fija el azar del algoritmo: con los mismos datos, produce los mismos árboles y el mismo umbral. Pero el warmup son los primeros 40 vectores del flujo en vivo, y cambian en cada ejecución. La reproducibilidad de 5.5.4 es del algoritmo, no de los resultados: las cifras de 5.8 corresponden a una ejecución concreta.</p>
+<p>Para que fuera reproducible grabaríamos los eventos una vez y los reproduciríamos en cada prueba, leyendo desde earliest y con ventanas por event time, para que dependan del timestamp del evento y no del momento en que Flink lo recibe. Como mínimo, guardaríamos el modelo entrenado.</p>
+<p>Los 40 vectores fueron una decisión práctica para empezar a detectar en pocos segundos. Es una muestra pequeña: con 8 %, el umbral depende de unos 3 vectores, y el warmup no se filtra ni se reentrena. Lo mejoraríamos con un warmup mayor, filtrado por las reglas, guardado y con reentrenamiento periódico.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th>Solución</th><th>Modelo reproducible</th><th>Alertas reproducibles</th></tr>
+<tr><td>Semilla en el faker</td><td>No del todo</td><td>No (uuid4, processing time, latest)</td></tr>
+<tr><td>Grabar y reproducir + event time + earliest</td><td>Sí</td><td>Sí</td></tr>
+<tr><td>Guardar el modelo (joblib)</td><td>Sí</td><td>No</td></tr>
+</table></div>
+<ul class="pts">
+<li>Reproducible = repetir en las mismas condiciones y obtener el mismo resultado. Semilla = condición necesaria, no suficiente.</li>
+<li>La memoria lo dice dos veces: en la explicación del score (casi defendible) y junto a la Tabla 14 (resultados, la problemática).</li>
+<li>contamination = 0,08 es decisión de diseño, igual al anomaly_ratio del generador, dato que en producción no se conoce. Más alto → más FP; más bajo → más FN. Alternativas: 'auto' (umbral −0,5 del paper) o calibrar contra ground truth maximizando F1.</li>
+<li>Otra imprecisión: la memoria dice que marca el "8 % más extremo". El 8 % solo fija el umbral al entrenar; después el umbral es fijo y se aplica vector a vector.</li>
+<li>Los 40 del warmup, incluido el 40, no pasan por el modelo; sin reentrenamiento, no hay adaptación a cambios de comportamiento.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> No digas "random_state garantiza reproducibilidad". No digas "con Faker.seed() se resolvía". No digas "el 8 % es el estándar". No justifiques el tamaño del warmup con falta de memoria ni con "fue el mínimo".</div>`
+},
+{
+ t:"Por qué el reduce no divide", topic:"Flink · agregación",
+ q:"En su procesador de Flink, el reduce no calcula la latencia media: acumula sumas y conteos, y la división se hace después, en un map. ¿Por qué? ¿No sería más simple promediar en el reduce?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Porque el promedio no es asociativo. El reduce combina los elementos de dos en dos, a medida que llegan. Con 100, 200 y 600 ms, la media real es 300; promediando de dos en dos sale 375, porque cada paso da más peso al último evento.</p>
+<p>La suma y el conteo sí son asociativos. El reduce acumula suma de latencias y número de eventos, y el map, al cerrar la ventana, hace una sola división: 900 entre 3, 300. Además, el estado por sesión son solo unos pocos números.</p></div>
+<h3>El ejemplo</h3>
+<div class="tbl"><table>
+<tr><th>Paso</th><th>Promediando ❌</th><th>Suma y conteo ✅</th></tr>
+<tr><td>100 ms</td><td class="num">100</td><td>(100, 1)</td></tr>
+<tr><td>+ 200 ms</td><td class="num">150</td><td>(300, 2)</td></tr>
+<tr><td>+ 600 ms</td><td class="num">375</td><td>(900, 3)</td></tr>
+<tr class="total"><td>Cierre (map)</td><td class="num">375</td><td>900 / 3 = 300</td></tr>
+</table></div>
+<ul class="pts">
+<li>Asociativo: (a + b) + c = a + (b + c).</li>
+<li>Con paralelismo, Flink podría combinar parciales en otro orden: con sumas y conteos el resultado no cambia.</li>
+<li>Los conteos se suman directamente; solo la latencia necesita numerador y denominador.</li>
+<li>Alternativa idiomática: <code>AggregateFunction</code> (add, merge, get_result).</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> La razón es matemática, no "ahorrar memoria". El reduce combina cada evento al llegar; solo la división espera al cierre.</div>`
+},
+{
+ t:"Registros corruptos sin DLQ", topic:"Flink · calidad de datos",
+ q:"En Flink filtran los registros malformados marcándolos como CORRUPT_RECORD. ¿Qué pasa con esos registros después? ¿Qué harían en un sistema en producción?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>El primer map marca como CORRUPT_RECORD los eventos con JSON ilegible y los que no traen session_id; el filter los elimina antes del key_by, así que no entran al estado de ninguna sesión. Pero se pierden: solo queda una línea en el log, y si falta el session_id, ni eso.</p>
+<p>Los demás campos faltantes se rellenan: sin tipo cuenta como page_view y sin latencia entra con cero, lo que baja la media de la sesión y puede parecerse a un bot.</p>
+<p>En producción usaríamos una dead-letter queue: un tópico aparte con el registro y el error, para analizarlo, y una métrica que cuente los fallos; si sube, algo falla aguas arriba.</p></div>
+<h3>Qué hace el código</h3>
+<div class="tbl"><table>
+<tr><th>Caso</th><th>Tratamiento</th><th>¿Llega a la ventana?</th></tr>
+<tr><td>JSON ilegible o error de tipo</td><td>log + CORRUPT_RECORD</td><td>No</td></tr>
+<tr><td>Sin session_id</td><td>CORRUPT_RECORD sin log</td><td>No</td></tr>
+<tr><td>Sin latency</td><td>latencia 0</td><td>Sí: baja la media</td></tr>
+<tr><td>Sin event_type</td><td>page_view</td><td>Sí</td></tr>
+<tr><td>Sin device / user_id</td><td>"unknown" / "anonymous"</td><td>Sí</td></tr>
+</table></div>
+<ul class="pts">
+<li>DLQ = dead-letter queue, cola de mensajes fallidos. En Flink: salida lateral (side output con OutputTag) hacia un tópico como ecommerce-events-dlq.</li>
+<li>La memoria (tras la Tabla 11) dice que el filtro evita contaminar el estado: cierto para ilegibles, no para campos faltantes.</li>
+<li>El generador produce JSON válido: no hay evidencia de que el filtro se activara.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> DLQ, no "QLD". Sin latencia se asigna cero, no el promedio; sin tipo, page_view, no "home". Es la latencia del evento, no avg_latency. No digas "se guardan para análisis" ni "valida todos los campos": solo exige session_id.</div>`
+},
+{
+ t:"Listeners de Kafka y KRaft", topic:"Kafka · infraestructura",
+ q:"Su Kafka corre en modo KRaft y expone dos listeners, INTERNAL en el 9092 y EXTERNAL en el 9094. ¿Por qué necesitan dos? ¿Qué aporta KRaft frente a ZooKeeper y qué limitaciones tiene su configuración?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Un listener es una dirección por la que el broker acepta conexiones. Necesitamos dos porque hay clientes en dos redes. Tras conectarse, el broker le anuncia al cliente qué dirección usar: kafka:9092 a los contenedores y localhost:9094 al host, porque el nombre kafka solo existe dentro de Docker. Solo el 9094 está publicado. Hay un tercero, CONTROLLER en el 9093, que usa KRaft.</p>
+<p>Los metadatos del clúster son el registro de tópicos, particiones y qué broker lidera cada una. Antes vivían en ZooKeeper, un sistema aparte. Con KRaft, Kafka gestiona sus propios metadatos: los controladores se coordinan con el protocolo Raft, por mayoría. Un sistema en lugar de dos y recuperación más rápida.</p>
+<p>Las limitaciones son de desarrollo: el mismo proceso de tfm-kafka es broker y controlador, y es el único votante; si cae, no hay quórum. Sin réplica y en texto plano. En producción usaríamos tres controladores, varios brokers y TLS con autenticación.</p></div>
+<h3>Listeners en el docker-compose</h3>
+<div class="tbl"><table>
+<tr><th>Listener</th><th>Anuncia</th><th>Lo usan</th></tr>
+<tr><td>INTERNAL :9092</td><td>kafka:9092</td><td>Contenedores (el job, si corriera en clúster)</td></tr>
+<tr><td>EXTERNAL :9094</td><td>localhost:9094</td><td>Todos los scripts del host, incluido Flink embebido</td></tr>
+<tr><td>CONTROLLER :9093</td><td>—</td><td>Quórum KRaft</td></tr>
+</table></div>
+<h3>Roles y datos</h3>
+<pre>Metadatos    = el inventario (tópicos, particiones, líderes)
+Controlador  = el rol que administra ese inventario
+Broker       = el rol que guarda y entrega los mensajes
+
+Hoy:          tfm-kafka → broker + controlador, 1 votante
+Producción:   C1 C2 C3 (controladores) + B1 B2 B3 (brokers)</pre>
+<div class="tbl"><table>
+<tr><th class="num">Votantes</th><th class="num">Fallos que tolera</th></tr>
+<tr><td class="num">1 (el suyo)</td><td class="num">0</td></tr>
+<tr><td class="num">3</td><td class="num">1</td></tr>
+<tr><td class="num">5</td><td class="num">2</td></tr>
+</table></div>
+<ul class="pts">
+<li>Jerarquía: host (PC) → Docker con 3 contenedores → 2 clústeres (Kafka de 1 broker; Flink ocioso).</li>
+<li>cp-kafka 7.6.0 = Kafka 3.6. KRaft apto para producción desde 3.3; Kafka 4.0 eliminó ZooKeeper.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Externo = localhost:9094, no kafka:9094; interno = 9092, no 9002. KRaft no es "metadatos y broker en el mismo nodo": eso es su configuración de desarrollo. El controlador no es el host: es un rol del mismo proceso Kafka. La memoria habla de dos listeners; hay tres. No digas "Docker tiene tres clústeres".</div>`
 }
 ];
 
