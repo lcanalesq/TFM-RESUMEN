@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Repaso del tribunal TFM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -588,6 +589,282 @@ Producción:   C1 C2 C3 (controladores) + B1 B2 B3 (brokers)</pre>
 </ul>
 <div class="careful"><strong>Cuida esto.</strong> Externo = localhost:9094, no kafka:9094; interno = 9092, no 9002. KRaft no es "metadatos y broker en el mismo nodo": eso es su configuración de desarrollo. El controlador no es el host: es un rol del mismo proceso Kafka. La memoria habla de dos listeners; hay tres. No digas "Docker tiene tres clústeres".</div>`
 }
+,
+{
+ t:"Marco teórico: pilares y autores", topic:"Marco teórico",
+ q:"¿Sobre qué pilares teóricos se apoya su trabajo y qué autor sostiene cada uno?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Nuestro trabajo se apoya en cuatro pilares.</p>
+<p>El primero es el procesamiento en flujo. Carbone y colaboradores, en 2015, presentan Flink como un motor único que unifica flujo y lotes. De ahí tomamos el estado por sesión y las ventanas. El contraste es el data warehouse por lotes de Kimball y Ross.</p>
+<p>El segundo es la detección de anomalías. Chandola y colaboradores, en 2009, clasifican las técnicas según la necesidad de etiquetas. En producción, las anomalías nuevas no llegan etiquetadas; por eso elegimos el enfoque no supervisado: Isolation Forest, de Liu, Ting y Zhou, en 2008, que aísla lo anómalo en pocos cortes.</p>
+<p>El tercero es la minería de uso web. Srivastava y colaboradores, en 2000, la dividen en preprocesamiento, descubrimiento y análisis de patrones; nuestras capas siguen esa separación, pero en flujo continuo. Bucklin y Sismeiro, en 2009, muestran el valor del clickstream por sesión.</p>
+<p>Y por último, los grafos de navegación. Newman, en 2010, da la definición formal del grafo dirigido y ponderado. Huidobro y colaboradores, en 2022, aplican esa idea a la navegación: la representan como grafo para ver el recorrido del usuario y en qué punto abandona el sitio.</p>
+<p>Nuestro aporte es unir estos cuatro pilares en un solo pipeline en tiempo real.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th>Pilar</th><th>Pregunta</th><th>Autores</th></tr>
+<tr><td>Stream</td><td>¿Cómo procesar al instante?</td><td>Carbone (+ Kimball y Ross, contraste)</td></tr>
+<tr><td>Anomalías</td><td>¿Cómo detectar sin etiquetas?</td><td>Chandola → Liu, Ting y Zhou</td></tr>
+<tr><td>Minería de uso web</td><td>¿Qué datos y a qué nivel?</td><td>Srivastava, Bucklin y Sismeiro</td></tr>
+<tr><td>Grafos</td><td>¿Cómo representar la navegación?</td><td>Newman (definición) → Huidobro (aplicación)</td></tr>
+</table></div>
+<ul class="pts">
+<li>Chandola clasifica según etiquetas: supervisada (normal + anómalo etiquetados), semisupervisada (solo normal), no supervisada (ninguna).</li>
+<li>Grafo dirigido = cada transición tiene sentido (Carrito → Checkout ≠ Checkout → Carrito). Ponderado = el peso cuenta cuántas veces ocurrió (grosor). G = (V, E, W): 9 categorías, transiciones, conteos.</li>
+<li>La minería web tiene tres ramas: contenido, estructura y uso. La nuestra es la de uso (clickstream).</li>
+<li>Kimball: no lo reemplazamos, lo complementamos con tiempo real.</li>
+<li>Li et al. (2025): trabajo reciente de una línea antigua (predicción de la siguiente página). Offline; integrarlo es trabajo futuro.</li>
+<li>Pronunciación: car-BÓ-ne · chan-DÓ-la · LIÚ, TING y CHÓU · sri-VÁS-ta-va · BÁK-lin y sis-MÉI-ro · ui-DÓ-bro · NIÚ-man.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Carbone, no "Carbonet". Flink es un motor único para flujo y lotes, no "el único motor de streaming". Chandola "clasifica", no "presenta"; es una revisión. Srivastava: PREprocesamiento, tres fases. Isolation Forest aísla el VECTOR de la sesión, no eventos. Newman solo para la definición: no calculamos centralidad ni ciclos. En el repaso del 28 set: nombres y Newman antes que Huidobro.</div>`
+},
+{
+ t:"Qué tomamos de cada paper", topic:"Marco teórico",
+ q:"Citan nueve referencias en el marco teórico. ¿Qué tomaron realmente de cada una y qué dejaron fuera?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>De cada referencia tomamos una pieza concreta del sistema, y dejamos fuera lo que el prototipo no implementa.</p>
+<p>De Carbone tomamos el modelo de Flink: estado por clave y ventanas. No activamos event time, checkpoints ni exactly-once, que son capacidades del motor.</p>
+<p>De Chandola, la clasificación por etiquetas; no usamos ninguna técnica concreta de su revisión. De Liu, Ting y Zhou, el algoritmo y su score, pero con una muestra de 40 vectores en lugar de los 256 que recomiendan.</p>
+<p>De Srivastava, la separación en fases y la sesión como unidad de análisis; no sus técnicas de minería. De Bucklin y Sismeiro, el valor del clickstream por sesión, no sus modelos de marketing.</p>
+<p>De Huidobro, la idea del grafo de navegación y el abandono, no su método de gramáticas. De Newman, solo la definición formal. De Kimball, el contraste con el data warehouse, no el modelado dimensional. Y de Li, el contexto de la predicción, que queda como trabajo futuro.</p></div>
+<h3>Tomamos · no tomamos</h3>
+<div class="tbl"><table>
+<tr><th>Autor</th><th>Tomamos</th><th>No tomamos</th></tr>
+<tr><td>Carbone et al. (2015)</td><td>DataStream, key_by, ventanas, reduce</td><td>Event time, checkpoints ABS, exactly-once, Gelly</td></tr>
+<tr><td>Kimball y Ross (2013)</td><td>Contraste batch</td><td>Modelado dimensional (incluido su capítulo de clickstream)</td></tr>
+<tr><td>Chandola et al. (2009)</td><td>Clasificación por etiquetas; anomalía puntual</td><td>Técnicas concretas; anomalías contextuales o colectivas</td></tr>
+<tr><td>Liu, Ting y Zhou (2008)</td><td>Aislamiento, E[h(x)], c(n), score; 100 árboles</td><td>Submuestra ψ = 256: usamos 40 (warmup)</td></tr>
+<tr><td>Srivastava et al. (2000)</td><td>Tres fases; sesión como unidad</td><td>Reglas de asociación, clustering, patrones secuenciales</td></tr>
+<tr><td>Bucklin y Sismeiro (2009)</td><td>Valor del clickstream por sesión</td><td>Modelos de marketing y publicidad</td></tr>
+<tr><td>Huidobro et al. (2022)</td><td>Grafo de navegación; transiciones que llevan al abandono</td><td>Sequitur, reglas de alto nivel, clases de visitantes</td></tr>
+<tr><td>Newman (2010)</td><td>G = (V, E, W) dirigido y ponderado</td><td>Densidad, centralidad, ciclos</td></tr>
+<tr><td>Li et al. (2025)</td><td>Contexto: predicción de la siguiente página</td><td>Markov, predicción (trabajo futuro)</td></tr>
+</table></div>
+<ul class="pts">
+<li>Liu recomienda ψ = 256 y t = 100 por defecto. Con 40 vectores, ψ = 40 y la profundidad máxima es ⌈log2 40⌉ = 6.</li>
+<li>Cada vector de sesión y ventana se evalúa como anomalía puntual (tipología de Chandola).</li>
+<li>Huidobro comprime sesiones con Sequitur; nuestro grafo usa 9 categorías fijas y cuenta transiciones.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Estructura cada respuesta como "tomamos X; no Y" (en el repaso del 28 set solo dijiste qué propone cada autor). Di "no implementamos", nunca "no sirve". El 256 de Liu es un valor por defecto, no un mínimo. No improvises detalles del método de Huidobro más allá de Sequitur y reglas.</div>`
+},
+{
+ t:"Estado del arte: la brecha", topic:"Estado del arte",
+ q:"Google Analytics 4 y Mixpanel ya detectan anomalías con aprendizaje automático. ¿Qué aporta su trabajo que no exista ya? ¿Cuál es exactamente la brecha?",
+ a:`<h3>Para decir en voz alta (guion de la slide 5, 1:10)</h3>
+<div class="say"><p>¿Qué existe hoy y qué falta? Para responderlo, comparamos cuatro referentes con nuestra propuesta.</p>
+<p>Google Analytics 4 y Mixpanel detectan anomalías, pero sobre métricas agregadas, por hora o por día, no por sesión; y son plataformas cerradas.</p>
+<p>Chandola y colaboradores revisan las técnicas de detección; es una revisión, no un sistema.</p>
+<p>Huidobro y Li trabajan la navegación, como grafo o como predicción, pero sobre datos históricos y sin detectar anomalías.</p>
+<p>Nuestra propuesta evalúa cada sesión en ventanas de 10 segundos, con reglas e Isolation Forest, y construye el grafo desde el flujo.</p>
+<p>La brecha es la integración: ninguno de los enfoques revisados reúne las cuatro capacidades.</p></div>
+<h3>Las cinco partes que pueden preguntar por separado</h3>
+<div class="tbl"><table>
+<tr><th>Parte</th><th>Respuesta corta</th></tr>
+<tr><td>23a · ¿Por qué no bastan GA4 y Mixpanel?</td><td>Cuatro razones: métricas agregadas por hora o día, no por sesión; detectan el síntoma, no el comportamiento; recorridos sin grafo formal; SaaS cerrado</td></tr>
+<tr><td>23b · ¿Por qué Chandola con "—"?</td><td>Revisión → raya; sistema sin la capacidad → equis</td></tr>
+<tr><td>23c · ¿Qué le falta a Huidobro?</td><td>Grafo estático desde logs; sin detección; datos no públicos (no "código")</td></tr>
+<tr><td>23d · ¿En qué se diferencia Li?</td><td>Primero predecir ≠ detectar; después offline ≠ flujo. Código y datos públicos</td></tr>
+<tr><td>23e · ¿Qué cubre su columna?</td><td>Herramientas de código abierto; transiciones fuera del recorrido esperado; la brecha es la integración, no cada pieza</td></tr>
+</table></div>
+<h3>Datos verificados</h3>
+<ul class="pts">
+<li>GA4: modelo bayesiano state-space sobre series, con intervalo creíble; también detección por segmentos con PCA. No digas "una métrica por vez": di "sobre métricas agregadas, no por sesión".</li>
+<li>Mixpanel: alertas sobre Insights y Funnels, umbral fijo o detección de anomalías; Prophet → TimesFM V2 (2026); evaluación como mínimo por hora; solo planes pagados.</li>
+<li>Multivariable = varias métricas a la vez. Las 7,810 alertas solo-IF tienen latencia ~120 ms y 6–14 clics: cada valor es normal, la combinación no.</li>
+<li>Li: la predicción de la siguiente página viene de Sarukkai (2000) y Deshpande y Karypis (2004), que no están en la bibliografía de la memoria.</li>
+<li>La slide 5 sintetiza y precisa la Tabla 3; la conclusión no cambia.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> No digas que GA4 o Mixpanel no detectan anomalías: sí lo hacen, sobre agregados. Di "ninguno de los enfoques revisados", nunca "nadie en el mundo". Evita "mejor" o "superior": usa "integra" y "complementa". "Tiempo real" = ventanas de 10 s.</div>`
+},
+{
+ t:"Riesgos de la Tabla 3", topic:"Estado del arte · riesgo",
+ q:"En su Tabla 3 afirman \"streaming evento a evento\", \"ML no supervisado por sesión en tiempo real\" y una integración \"reproducible\". ¿Se sostienen esas celdas con lo que implementaron?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>La conclusión de la tabla se sostiene, pero tres celdas de nuestra columna hay que leerlas con precisión.</p>
+<p>"Evento a evento": cada evento entra a Flink y actualiza el estado de su sesión al llegar, pero la alerta se emite al cerrar la ventana de 10 segundos. Es procesamiento en flujo con ventanas.</p>
+<p>"ML en tiempo real": la inferencia sí es en tiempo real, cada vector se evalúa al llegar. El entrenamiento no: el modelo se ajusta una sola vez con los primeros 40 vectores.</p>
+<p>"Reproducible": la infraestructura se levanta igual con Docker Compose, pero las cifras exactas corresponden a una ejecución concreta; el warmup sale del flujo en vivo.</p>
+<p>Sobre los otros referentes, en la presentación precisamos la tabla: Chandola es una revisión, no un sistema, y Huidobro no publica sus datos. La brecha, la integración de las cuatro capacidades, no cambia.</p></div>
+<h3>Lectura precisa de cada celda</h3>
+<div class="tbl"><table>
+<tr><th>Celda</th><th>Riesgo</th><th>Lectura precisa</th></tr>
+<tr><td>"Streaming evento a evento"</td><td>La alerta sale al cerrar la ventana</td><td>Estado por evento; emisión por ventana de 10 s</td></tr>
+<tr><td>"ML no supervisado en tiempo real"</td><td>Modelo entrenado una sola vez</td><td>Inferencia en tiempo real; entrenamiento único con 40 vectores</td></tr>
+<tr><td>"Docker Compose, reproducible"</td><td>Resultados no repetibles</td><td>Infraestructura reproducible; cifras de una ejecución</td></tr>
+<tr><td>"Grafo dinámico, evento a evento"</td><td>Bajo</td><td>Cada mensaje suma 1 a su arista; la vista se refresca por ciclos</td></tr>
+<tr><td>Chandola "batch / offline"</td><td>La revisión incluye técnicas en línea</td><td>Revisión, no sistema (—)</td></tr>
+<tr><td>Papers "open source ✓"</td><td>Huidobro no publica datos</td><td>Académico ≠ abierto y desplegable</td></tr>
+</table></div>
+<div class="careful"><strong>Cuida esto.</strong> Reconoce la precisión antes de que la señalen; no digas "la tabla está mal". "Reproducible" = la infraestructura, nunca las cifras (en el repaso del 28 set dijiste "sí, es reproducible"). No olvides la celda "ML en tiempo real": inferencia sí, entrenamiento una vez con 40.</div>`
+},
+{
+ t:"Supervisado, no supervisado e híbrido", topic:"Detección",
+ q:"Su generador etiqueta cada evento como anómalo o normal. ¿Por qué no entrenaron un modelo supervisado? ¿Y por qué combinar reglas con Isolation Forest en lugar de usar solo uno?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Un modelo supervisado necesita anomalías etiquetadas para aprender. Nuestras etiquetas existen solo porque los datos son sintéticos; en producción, un ataque nuevo no llega etiquetado. Si entrenáramos con ellas, el modelo aprendería solo los tres tipos que inyectamos y el resultado no sería realista.</p>
+<p>Un semisupervisado aprende solo lo normal, pero necesita datos normales limpios. Nuestro warmup toma los primeros 40 vectores sin filtrar, y puede incluir anomalías.</p>
+<p>Por eso elegimos lo no supervisado: Isolation Forest asume que las anomalías son pocas y distintas, y no necesita etiquetas.</p>
+<p>Y lo combinamos con reglas porque cubren cosas distintas. Las reglas detectan firmas conocidas, funcionan desde el primer vector y son explicables. El modelo detecta combinaciones atípicas que ninguna regla describe. Los datos lo muestran: el modelo no marcó ninguno de los 3,011 bots, que capturó la regla R1, y las reglas no marcaron 7,810 alertas que solo vio el modelo.</p></div>
+<h3>Puntos clave</h3>
+<div class="tbl"><table>
+<tr><th>Enfoque</th><th>Qué necesita</th><th>En el TFM</th></tr>
+<tr><td>Supervisado</td><td>Anomalías y normales etiquetados</td><td>No: en producción no hay etiquetas; aprendería solo 3 tipos</td></tr>
+<tr><td>Semisupervisado</td><td>Solo normales, pero limpios</td><td>No hoy: warmup sin filtrar. Con warmup filtrado por reglas, se acercaría</td></tr>
+<tr><td>No supervisado</td><td>Nada; supone anomalías pocas y distintas</td><td>Sí: Isolation Forest, contamination = 0.08</td></tr>
+</table></div>
+<div class="tbl"><table>
+<tr><th>Capa</th><th>Fortaleza</th><th>Límite</th><th>Evidencia</th></tr>
+<tr><td>Reglas</td><td>Firmas conocidas, activas desde el vector 1, explicables</td><td>Solo detectan lo previsto</td><td>R1 = 3,011 bots; R3 nunca disparó</td></tr>
+<tr><td>Isolation Forest</td><td>Combinaciones atípicas en 6 métricas</td><td>No explica el porqué; entrenado una vez</td><td>7,810 alertas solo-IF; 0 bots</td></tr>
+</table></div>
+<div class="careful"><strong>Cuida esto.</strong> Falta en el repaso del 28 set: por qué no usar las etiquetas aunque existan, el semisupervisado y las cifras 0 de 3,011 y 7,810. "Cubrir todos" supone ground truth. No digas "el híbrido es mejor": di "las capas se complementan". Etiquetas = evaluar, NUNCA detectar. El modelo no ve device: por eso no ve los bots.</div>`
+},
+{
+ t:"Objetivos y su alcance", topic:"Objetivos",
+ q:"Enuncien el objetivo general y los específicos. ¿Los alcanzaron todos?",
+ a:`<h3>Para decir en voz alta (guion de la slide 6, 1:17)</h3>
+<div class="say"><p>Nuestro objetivo general es diseñar, desarrollar y validar una arquitectura de stream processing para observar el comportamiento del usuario y detectar anomalías de forma proactiva. Lo dividimos en cinco objetivos.</p>
+<p>Los cuatro primeros siguen el recorrido del dato. Primero, capturar los eventos de navegación con Kafka, a partir de un generador sintético. Segundo, convertirlos en un vector por sesión con Flink, y construir el grafo de navegación desde el mismo flujo. Tercero, detectar anomalías con reglas e Isolation Forest, sin datos etiquetados. Cuarto, desarrollar un dashboard analítico e interactivo que muestre las alertas y el grafo.</p>
+<p>El quinto evalúa el sistema completo: que la alerta se publique en menos de tres segundos tras cerrar la ventana, y comparar el time-to-insight frente al procesamiento por lotes.</p></div>
+<h3>Si preguntan "¿los alcanzaron?"</h3>
+<div class="say"><p>Los cuatro primeros, sí. El quinto, de forma parcial: la latencia la observamos, no la medimos, y la reducción del time-to-insight frente a batch está argumentada, no medida.</p></div>
+<div class="tbl"><table>
+<tr><th>OE</th><th>Qué</th><th>Capas</th><th>Estado</th></tr>
+<tr><td>OE1 Ingesta</td><td>Kafka + generador Faker</td><td>1 y 2</td><td>Alcanzado ("escalable" por diseño; 1 broker, 1 partición)</td></tr>
+<tr><td>OE2 Procesamiento</td><td>Vector por sesión (Flink) y grafo (dashboard)</td><td>3 y 5</td><td>Alcanzado</td></tr>
+<tr><td>OE3 Detección</td><td>Reglas + Isolation Forest, sin etiquetas</td><td>4</td><td>Alcanzado</td></tr>
+<tr><td>OE4 Observabilidad</td><td>Dashboard Streamlit (MVP) con grafo</td><td>5</td><td>Alcanzado</td></tr>
+<tr><td>OE5 Evaluación</td><td>Latencia del pipeline &lt; 3 s y time-to-insight frente a batch</td><td>Ninguna: evalúa todo</td><td>Parcial</td></tr>
+</table></div>
+<ul class="pts">
+<li>Memoria (conclusiones): OE5 "alcanzado en arquitectura y comportamiento operativo, pendiente de instrumentación formal".</li>
+<li>El "&gt; 50 % de reducción del time-to-insight" que promete el OE5 no se midió.</li>
+<li>Colores: la slide 6 muestra la estructura (azul OE1–4, gris OE5); la 17 muestra el estado (verde alcanzado, naranja parcial).</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Los OE no corresponden uno a uno con las 5 capas: nunca digas "uno por capa". El grafo lo construye el dashboard, no Flink. No digas "alta precisión" en el OE3. En la slide 6 no des resultados: el estado va en la 15 y la 17.</div>`
+},
+{
+ t:"Hipótesis y cómo se contrastan", topic:"Hipótesis",
+ q:"¿Cuáles son sus hipótesis de investigación y cómo se contrasta cada una?",
+ a:`<h3>Para decir en voz alta (guion de la slide 7, 1:01)</h3>
+<div class="say"><p>Del objetivo general derivamos tres hipótesis, cada una con una forma concreta de contrastarla.</p>
+<p>H1, el rendimiento en tiempo real: la alerta se publica en menos de tres segundos tras el cierre de la ventana. La contrastamos observando, en operación, el tiempo entre el cierre de la ventana y la publicación de la alerta.</p>
+<p>H2, nuestra hipótesis central: la combinación de reglas e Isolation Forest supera en recall y F1 a cada capa aislada. La contrastamos comparando las métricas de cada enfoque.</p>
+<p>H3, la complementariedad: las capas detectan subconjuntos mayormente distintos y coinciden en lo más severo. La contrastamos midiendo el porcentaje de alertas marcadas por ambas capas.</p>
+<p>Los resultados los veremos al final.</p></div>
+<div class="tbl"><table>
+<tr><th>Hipótesis</th><th>Se contrasta con</th><th>Resultado</th></tr>
+<tr><td>H1 Rendimiento</td><td>Tiempo cierre de ventana → alerta, observado en operación</td><td>Sustentada por observación</td></tr>
+<tr><td>H2 Híbrido (central)</td><td>Recall y F1 de reglas, IF e híbrido</td><td>Validada en términos relativos</td></tr>
+<tr><td>H3 Complementariedad</td><td>% de alertas marcadas por ambas capas</td><td>Validada: 686 de 13,696 = 5 %</td></tr>
+</table></div>
+<ul class="pts">
+<li>H1: la memoria promete "milisegundos" apoyándose en Carbone, no en una medición propia.</li>
+<li>H2 es circular: el universo son las alertas y el híbrido cubre el 100 % por construcción. Lo informativo: reglas 43 %, IF 62 %.</li>
+<li>H3 es la mejor sustentada, pero depende de la configuración del generador.</li>
+<li>Los 2,000 ms de R2 (latencia que vive el usuario) no son los 3 s de H1 (latencia del pipeline). No se contradicen.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> H1: "sustentada por observación", nunca "validada" ni "medida". Si interrumpen "¿la superó?" (H2): el híbrido cubre por definición todo el registro; lo informativo es cuánto deja fuera cada capa sola. En la slide 7 no adelantes resultados.</div>`
+},
+{
+ t:"Validación de hipótesis y F1", topic:"Evaluación",
+ q:"¿Se validaron sus hipótesis? Expliquen qué significan Precision, Recall y F1 y con qué valores los calcularon.",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Las tres tienen respaldo, pero con distinto grado de evidencia.</p>
+<p>H1, el rendimiento, está sustentada por observación. En operación, las alertas aparecen tras el cierre de cada ventana. Pero no la medimos: el vector no lleva marca de tiempo, así que no hay dos instantes que restar.</p>
+<p>H2, la hipótesis central, está validada en términos relativos. Evaluamos sobre el registro de alertas, 13,696 filas. Todas son alertas, así que la precisión es 1 por construcción y el híbrido cubre el 100 % por definición. Lo informativo es cuánto cubre cada capa sola. Las reglas, el 43 %, con un F1 de 0.601. Isolation Forest, el 62 %, con un F1 de 0.766.</p>
+<p>H3, la complementariedad, es la mejor sustentada. Solo el 5 % de las alertas coincide en ambas capas, y son las de mayor latencia.</p>
+<p>Lo que no podemos afirmar es cuántas alertas son anomalías reales. Para eso falta la matriz de confusión con las etiquetas del generador.</p></div>
+<h3>Las tres métricas</h3>
+<pre>              Es anomalía   No es anomalía
+Hay alerta        TP             FP
+No hay alerta     FN             TN
+(2.ª letra = lo que dijo el sistema · 1.ª = si acertó)
+
+Precision = TP / (TP + FP)   de lo que alerté, ¿cuánto era anomalía?  (fiabilidad)
+Recall    = TP / (TP + FN)   de las anomalías, ¿cuántas detecté?      (cobertura)
+F1        = 2·P·R / (P + R)  media armónica: castiga el desequilibrio
+Con P = 1:  F1 = 2R / (1 + R)</pre>
+<h3>Valores del CSV</h3>
+<div class="tbl"><table>
+<tr><th></th><th class="num">Solo reglas</th><th class="num">Solo IF</th><th class="num">Híbrido</th></tr>
+<tr><td>TP (la capa alertó)</td><td class="num">5,886</td><td class="num">8,496</td><td class="num">13,696</td></tr>
+<tr><td>FN (solo la otra capa alertó)</td><td class="num">7,810</td><td class="num">5,200</td><td class="num">0</td></tr>
+<tr><td>FP · TN</td><td class="num">0 · 0</td><td class="num">0 · 0</td><td class="num">0 · 0</td></tr>
+<tr><td>Precision</td><td class="num">1</td><td class="num">1</td><td class="num">1</td></tr>
+<tr><td>Recall</td><td class="num">0.430</td><td class="num">0.620</td><td class="num">1</td></tr>
+<tr><td>F1</td><td class="num"><span class="hl">0.601</span></td><td class="num"><span class="hl">0.766</span></td><td class="num"><span class="hl">1</span></td></tr>
+<tr class="total"><td>Distancia al híbrido</td><td class="num">39.9 puntos</td><td class="num">23.4 puntos</td><td class="num">—</td></tr>
+</table></div>
+<h3>"Por construcción"</h3>
+<ul class="pts">
+<li>El detector solo guarda alertas, y la evaluación trata cada fila como anomalía. Sin nada "normal" en el universo, no puede haber falsos positivos: P = TP / (TP + 0) = 1.</li>
+<li>Prueba: una capa que marcara 100 filas al azar tendría P = 100 / 100 = 1. El 1 no mide calidad.</li>
+<li>Analogía: un inspector que solo registra lo que rechazó y asume que todo rechazo era defectuoso.</li>
+<li>El caso más dudoso: las 7,810 de IF, con latencia normal (~120 ms); el modelo marca ~8 % por calibración.</li>
+</ul>
+<h3>Repreguntas</h3>
+<ul class="pts">
+<li>"¿H2 es tautológica?" → El 100 % sí; el tamaño de lo que cada capa deja fuera no. IF no marcó ninguno de los 3,011 bots.</li>
+<li>"¿Por qué no F1 real?" → Flink descarta is_anomaly y solo se guardan alertas. Anexo A1.</li>
+<li>"¿Qué aporta el F1 si P = 1?" → Nada que el recall no diga; es la métrica con la que se formuló H2.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> "Validada en términos relativos", nunca a secas. "El híbrido cubre todas las ALERTAS", no las anomalías. 43 % y 62 % = cobertura; 57 % y 38 % = lo que queda fuera. No repitas "pruebas de estrés" ni "holgadamente por debajo de 3 s". Precision es de las alertas; recall, de las anomalías.</div>`
+},
+{
+ t:"Metodología e iteraciones", topic:"Metodología",
+ q:"¿Qué metodología siguieron y por qué? ¿Cómo se organizaron las iteraciones?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Usamos una metodología ágil: un Scrum adaptado. Por dos razones. Teníamos un plazo fijo de ocho semanas, y el objetivo era un producto mínimo viable, funcional y auditable. En cascada, un error en la ingesta lo habríamos descubierto al final. Con iteraciones, cada capa quedaba funcionando antes de construir la siguiente.</p>
+<p>Fueron cuatro sprints de dos semanas, que siguen el recorrido del dato. El primero, la ingesta: el generador con Faker y Kafka. El segundo, el procesamiento con Flink: el vector por sesión en ventanas de 10 segundos, y el modelo del grafo. El tercero, la detección: reglas e Isolation Forest. El cuarto, el dashboard y la evaluación.</p>
+<p>El principio fue el timeboxing: cada sprint con un plazo cerrado. Y lo que no era crítico lo dejamos fuera a propósito: un frontend complejo y los datos reales, que además exige el marco normativo.</p></div>
+<div class="tbl"><table>
+<tr><th>Iteración</th><th>Semanas</th><th>Qué se construye</th><th>OE</th><th>Capas</th></tr>
+<tr><td>I · Ingesta</td><td>1–2</td><td>Faker + Kafka</td><td>OE1</td><td>1 y 2</td></tr>
+<tr><td>II · Procesamiento</td><td>3–4</td><td>Flink: vector por sesión; se DEFINE el grafo</td><td>OE2</td><td>3</td></tr>
+<tr><td>III · Detección</td><td>5–6</td><td>Reglas + Isolation Forest</td><td>OE3</td><td>4</td></tr>
+<tr><td>IV · Observabilidad y evaluación</td><td>7–8</td><td>Dashboard; se CONSTRUYE el grafo; evaluación</td><td>OE4 y OE5</td><td>5</td></tr>
+</table></div>
+<h3>Cinco frases de la memoria con respuesta preparada</h3>
+<div class="tbl"><table>
+<tr><th>Frase (3.4)</th><th>Respuesta</th></tr>
+<tr><td>Iteración II: "Consumo y micro-batching"</td><td>Error de redacción. Flink procesa evento a evento y emite por ventanas; micro-batching es Spark, que descartamos (5.1.6)</td></tr>
+<tr><td>Iteración IV: "pruebas de estrés incrementando la carga"</td><td>No se hicieron: carga constante de 30 eventos por segundo. Carga creciente = trabajo futuro</td></tr>
+<tr><td>Iteración IV: "latencia E2E &lt; 3 s desde la emisión hasta el renderizado"</td><td>No alcanzable por diseño: con ventana de 10 s un evento espera hasta 10 s. Por eso H1 mide cierre de ventana → publicación</td></tr>
+<tr><td>Iteración III: "clasificación en flujo" de checkout_drop, high_latency y bots</td><td>El sistema no clasifica el tipo: indica qué capa disparó. checkout_drop no tiene regla; solo IF podría captarlo, no confirmable sin etiquetas</td></tr>
+<tr><td>Iteración I: "altamente disponible y tolerante a fallos"</td><td>Objetivo de diseño. Prototipo con 1 broker y RF 1: sin alta disponibilidad (anexo A4)</td></tr>
+</table></div>
+<ul class="pts">
+<li>Flink procesa en flujo continuo: el reduce actualiza el estado de la sesión al llegar cada evento; la ventana solo decide cuándo se emite. En micro-batching, el procesamiento espera al lote.</li>
+<li>"¿Cómo hicieron Scrum siendo dos?" → Adaptado: sprints, timeboxing y entrega incremental, sin roles formales. Confirmar con Benjamín tablero, revisiones y si se cumplió el Gantt (Figura 4).</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Nunca "micro-batching" ni "micro-lotes" para Flink; nunca "Flink procesa por ventanas": procesa evento a evento y EMITE por ventanas. "Carga constante de 30 eventos por segundo", nunca "pruebas de estrés". La latencia de H1 es cierre de ventana → publicación, no emisión → renderizado.</div>`
+},
+{
+ t:"Marco normativo", topic:"Marco normativo",
+ q:"¿Qué marco normativo aplica a un sistema como el suyo y cómo lo resolvieron?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Un sistema que analiza el comportamiento de usuarios trata datos personales. No hacen falta nombres: una dirección IP o un identificador de cookie bastan para que una persona sea identificable.</p>
+<p>Revisamos tres marcos. El europeo, porque UNIR es una universidad española: el RGPD y la ley española que lo adapta, la LOPD-GDD. El peruano y el colombiano, porque somos autores de esos países y el sistema está pensado para su comercio electrónico: en Perú, la Ley 29733, de 2011, y su reglamento de 2024; en Colombia, la Ley 1581, de 2012. Los tres comparten cuatro principios: consentimiento, minimización, finalidad y seguridad.</p>
+<p>Nuestra respuesta fue una decisión de diseño: datos cien por ciento sintéticos, generados con Faker. No existe ningún titular real, así que la investigación queda fuera del ámbito de estas normas.</p>
+<p>Para producción dejamos definido qué haría falta: base jurídica y consentimiento, incluido el de cookies; evaluación de impacto; oficial de datos; y atención de los derechos de los titulares.</p></div>
+<div class="tbl"><table>
+<tr><th>Marco</th><th>Norma</th><th>Por qué</th></tr>
+<tr><td>UE · España</td><td>RGPD (UE) 2016/679 · LOPD-GDD 3/2018</td><td>UNIR es española</td></tr>
+<tr><td>Perú</td><td>Ley 29733 (2011) · DS 016-2024-JUS</td><td>Autor y mercado; alcance extraterritorial por análisis de comportamiento</td></tr>
+<tr><td>Colombia</td><td>Ley Estatutaria 1581 de 2012</td><td>Autor y mercado; habeas data</td></tr>
+</table></div>
+<h3>Seis puntos con respuesta preparada</h3>
+<ul class="pts">
+<li>DS 016-2024-JUS: la memoria dice que "entró en vigor en noviembre de 2024". Se publicó el 30 nov 2024 y está vigente desde fines de marzo de 2025. No cites número de artículo del alcance extraterritorial.</li>
+<li>Colombia: el proyecto de reforma de 2025 se archivó por vencimiento de términos; la Ley 1581 sigue vigente sin cambios. En la slide: "(reforma pendiente)".</li>
+<li>"El RGPD aplica a tratamientos a gran escala" (4.1.1): aplica a cualquier tratamiento de datos personales; gran escala y seguimiento sistemático son criterios de EIPD (art. 35) y DPO (art. 37).</li>
+<li>"Si no aplica, ¿por qué el art. 25?" → Criterio de diseño para producción: identificadores seudónimos y campos mínimos.</li>
+<li>Minimización: el vector lleva ip_address y user_id y la consola muestra la IP. Con datos reales, seudonimizar o truncar en la ingesta; el modelo no los usa.</li>
+<li>"¿Una IP de Faker puede coincidir con una real?" → Sí, pero no está vinculada a ninguna persona ni actividad: no identifica a nadie.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> "La investigación queda FUERA DEL ÁMBITO", nunca "los datos sintéticos cumplen el RGPD". En la ley peruana la minimización se llama principio de proporcionalidad. Reglamento peruano: publicado en noviembre de 2024, vigente desde marzo de 2025. No menciones multas.</div>`
+}
 ];
 
 const listEl=document.getElementById('qlist');
@@ -640,3 +917,5 @@ if(m) start=Math.min(Q.length,Math.max(1,+m[1]))-1;
 else { const s=+load('tfm-repaso-q'); if(s>=0&&s<Q.length) start=s; }
 show(start);
 </script>
+
+</body></html>
