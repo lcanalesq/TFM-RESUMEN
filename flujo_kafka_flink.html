@@ -235,6 +235,57 @@ table.vt tr.sel td{background:color-mix(in srgb,var(--info) 16%,var(--surf));col
 
 .ihint{font-size:11.5px;color:var(--faint);text-align:center;padding:26px 10px;line-height:1.6;font-style:italic}
 
+/* ── grafo (escena 8) ── */
+.gtape .cell{width:34px}
+.gtape .cell span{font-size:6.5px}
+.gptr{font-family:var(--mono);font-size:10px;color:var(--soft);margin:2px 0 8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.gptr b{color:var(--das)}
+.gbar{display:flex;gap:6px;align-items:center;margin:4px 0 10px;flex-wrap:wrap}
+.gbar .cnt{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto}
+.gcols{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.gop{border:1px solid var(--rule);border-radius:10px;background:var(--surf);padding:6px 10px;font-family:var(--mono);font-size:10.5px}
+.gl{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dashed var(--rule);color:var(--soft);line-height:1.45}
+.gl:last-child{border-bottom:none}
+.gl.anim{opacity:0;animation:gin .35s forwards;animation-delay:calc(var(--d) * .24s)}
+@keyframes gin{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.gl .n0{flex:none;color:var(--faint);width:14px}
+.gl .gw{flex:none;font-size:8px;padding:1px 0;border-radius:4px;width:54px;text-align:center;font-weight:700}
+.gw.k{background:color-mix(in srgb,var(--kaf) 20%,transparent);color:var(--kaf)}
+.gw.p{background:color-mix(in srgb,var(--das) 20%,transparent);color:var(--das)}
+.gw.r{background:color-mix(in srgb,var(--info) 20%,transparent);color:var(--info)}
+.gw.d{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.gl .tx{min-width:0;overflow-wrap:anywhere}
+.gl .tx i{font-style:normal;color:var(--ink)}
+.gl .ok{color:var(--ok);font-weight:700} .gl .bad{color:var(--bad);font-weight:700} .gl .mut{color:var(--faint)}
+.gsvgw{border:1px solid var(--rule);border-radius:10px;background:var(--bg);padding:4px 6px}
+.gsvgw svg{display:block;width:100%;height:auto}
+.gleg{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--soft);padding:4px 4px 2px}
+.gleg i{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.gtab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px}
+.gtab th{color:var(--faint);font-weight:500;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:4px 5px;border-bottom:1px solid var(--rule)}
+.gtab td{padding:4px 5px;border-bottom:1px solid var(--rule);color:var(--soft)}
+.gtab td.nm{text-align:right;color:var(--ink);font-weight:700}
+.gtab tr.fl td{animation:gfl 1.4s ease-out}
+@keyframes gfl{0%,35%{background:color-mix(in srgb,var(--warn) 30%,transparent)}100%{background:transparent}}
+.gtab .emp td{color:var(--faint);font-style:italic;text-align:center}
+.gstore{border:1px solid var(--rule);border-radius:10px;background:var(--bg2);padding:9px 10px;margin-bottom:10px}
+.gstore .sh{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}
+.gstore .sh b{font-family:var(--mono);font-size:10.5px;color:var(--ink)}
+.gstore .sd{font-size:11px;color:var(--faint);line-height:1.45;margin-top:6px}
+.gmap{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10.5px}
+.gmap td{padding:4px 6px;border-bottom:1px solid var(--rule);color:var(--soft)}
+.gmap td:nth-child(2){color:var(--faint);width:1%}
+.gmap td:last-child{color:var(--ink);font-weight:700}
+.gcy{display:grid;grid-template-columns:1fr 1.5fr 1.3fr 1.3fr .9fr;gap:4px;position:relative;margin:6px 0 4px}
+.gcy div{border:1px solid var(--rule2);border-radius:7px;background:var(--surf);padding:7px 6px;font-family:var(--mono);font-size:9.5px;color:var(--soft);line-height:1.35;text-align:center}
+.gcy div b{display:block;color:var(--ink);font-size:10px;margin-bottom:2px}
+.gcyb{height:4px;border-radius:2px;background:var(--surf2);position:relative;overflow:hidden;margin-bottom:10px}
+.gcyb i{position:absolute;top:0;bottom:0;width:18%;background:var(--das);border-radius:2px;animation:gcy 2.6s linear infinite}
+@keyframes gcy{from{left:-18%}to{left:100%}}
+.gseq{border:1px solid var(--rule);border-radius:10px;background:var(--surf);padding:4px 10px;margin-bottom:10px;font-family:var(--mono);font-size:10.5px}
+.grp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:900px){.gcy{grid-template-columns:1fr 1fr}.grp{grid-template-columns:1fr}}
+
 @media(max-width:900px){
   .sbody{grid-template-columns:1fr}
   .insp{border-left:none;border-top:1px solid var(--rule);max-height:none}
@@ -246,7 +297,7 @@ table.vt tr.sel td{background:color-mix(in srgb,var(--info) 16%,var(--surf));col
 </head>
 <body>
 <header><div class="hd">
-  <div class="brand"><h1>Cómo viaja un clic</h1><span>Faker · Kafka · Flink · Detección híbrida</span></div>
+  <div class="brand"><h1>Cómo viaja un clic</h1><span>Faker · Kafka · Flink · Detección híbrida · Grafo</span></div>
   <div class="tabs" id="tabs"></div>
   <button class="dbtn" id="objBtn">Objetivos e hipótesis</button>
   <button class="dbtn" id="gloBtn">Glosario</button>
@@ -380,7 +431,7 @@ const fmt0 = n => n.toLocaleString('es-PE');
 /* ════════════ ESTADO ════════════ */
 let sc=0, st=0, filt='all', parts=1;   // 1 = despliegue real · 3 = vista al escalar
 const sel={0:'sess_A7f3',1:null,2:null,3:'v_07',4:'kafka',5:0,6:null};
-const EXP={crash:false,nokey:false,nokeyby:false};
+const EXP={crash:false,nokey:false,nokeyby:false,grestart:false,gclear:false};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
 /* ════════════ JSON DE UNA SESIÓN ════════════ */
@@ -929,6 +980,315 @@ function sc6(step){
   return {main,insp};
 }
 
+/* ════════════ ESCENA 7 · GRAFO (app.py) ════════════ */
+/* Sesiones y URLs coherentes con NAVIGATION_GRAPH y los perfiles de faker_producer.py */
+const GS = {
+ sess_A7f3:{L:'A',c:'#77ADFF',k:'normal'},
+ sess_B1c9:{L:'B',c:'#E87FD4',k:'bot'},
+ sess_C4e2:{L:'C',c:'#F3C551',k:'checkout_drop'},
+ sess_D8a1:{L:'D',c:'#7FD1E8',k:'normal'}
+};
+const GEV = [
+ ['sess_A7f3','/categorias/zapatillas','page_view'],
+ ['sess_B1c9','/producto/zap-001','page_view'],
+ ['sess_C4e2','/carrito','checkout_start'],
+ ['sess_D8a1','/ofertas','page_view'],
+ ['sess_A7f3','/producto/zap-002','page_view'],
+ ['sess_B1c9','/buscar','page_view'],
+ ['sess_C4e2','/checkout','checkout_start'],
+ ['sess_A7f3','/producto/zap-001','page_view'],
+ ['sess_D8a1','/producto/ropa-010','page_view'],
+ ['sess_B1c9','/buscar','page_view'],
+ ['sess_C4e2','/checkout','checkout_start'],
+ ['sess_A7f3','/carrito','add_to_cart'],
+ ['sess_D8a1','/carrito','add_to_cart'],
+ ['sess_B1c9','/producto/zap-002','page_view'],
+ ['sess_A7f3','/checkout','checkout_start'],
+ ['sess_C4e2','/checkout','checkout_start'],
+ ['sess_D8a1','/','page_view'],
+ ['sess_A7f3','/confirmacion','purchase']
+];
+const GEXTRA = ['sess_A7f3','/confirmacion','purchase'];
+
+function gNorm(u){
+  if(u==='/') return 'Inicio';
+  if(u.startsWith('/categorias')) return 'Categorías';
+  if(u.startsWith('/ofertas')) return 'Ofertas';
+  if(u.startsWith('/buscar')) return 'Buscar';
+  if(u.startsWith('/producto')) return 'Producto';
+  if(u.startsWith('/carrito')) return 'Carrito';
+  if(u.startsWith('/checkout')) return 'Checkout';
+  if(u.startsWith('/confirmacion')) return 'Confirmación';
+  return 'Otro';
+}
+const GESP = new Set([
+ 'Inicio>Categorías','Inicio>Ofertas','Inicio>Buscar',
+ 'Categorías>Producto','Categorías>Buscar',
+ 'Ofertas>Producto','Buscar>Producto',
+ 'Producto>Carrito','Producto>Categorías','Producto>Producto',
+ 'Carrito>Checkout','Carrito>Categorías','Carrito>Inicio',
+ 'Checkout>Confirmación','Confirmación>Confirmación']);
+const GPOS = {'Inicio':[0,.5],'Categorías':[1.5,1.2],'Buscar':[1.5,.4],'Ofertas':[1.5,-.4],
+  'Producto':[3,.5],'Carrito':[4.5,.5],'Checkout':[6,.5],'Confirmación':[7.5,.5],'Otro':[0,-.8]};
+const gXY = n => { const [x,y]=GPOS[n]; return [62+x*93, 40+(1.2-y)*108]; };
+
+/* Reproduce la lógica de actualizar_grafo_observado() sobre los n primeros eventos */
+function gRun(evs, restartAt){
+  const lib={}, ram={}, db={}; let op=null;
+  evs.forEach((e,idx)=>{
+    if(restartAt===idx){ for(const k in lib) delete lib[k]; }   // la RAM se vacía; las aristas se recargan de SQLite
+    const [sid,url,et]=e, pg=gNorm(url), prev=(sid in lib)?lib[sid]:null;
+    op={idx,sid,url,et,pg,prev,edge:null,from:0,to:0};
+    if(prev!==null){ const k=prev+'>'+pg; op.from=ram[k]||0; ram[k]=op.from+1; db[k]=ram[k]; op.edge=k; op.to=ram[k]; }
+    lib[sid]=pg;
+  });
+  return {lib,ram,db,op};
+}
+
+const G={step:-1,i:0,timer:null,anim:false};
+const GRANGE={2:[0,4],3:[4,18]};
+function gStop(){ if(G.timer){clearInterval(G.timer);G.timer=null;} }
+function gPlay(){
+  gStop();
+  G.timer=setInterval(()=>{
+    const r=GRANGE[st];
+    if(sc!==7||!r){gStop();return;}
+    if(G.i>=r[1]){gStop();render();return;}
+    G.i++; G.anim=true; render();
+  },1900);
+}
+function gChip(sid){ const s=GS[sid]; return `<span class="chip" style="background:color-mix(in srgb,${s.c} 22%,transparent);color:${s.c}">${sid}</span>`; }
+
+function gTape(n, read, cur, label, ptrTxt){
+  const evs = n>GEV.length ? GEV.concat([GEXTRA]) : GEV;
+  const cells = evs.slice(0,n).map((e,i)=>{
+    const s=GS[e[0]];
+    return `<div class="cell${i<read?'':' unread'}${i===cur?' sel':''}" style="--c:${s.c}"><b>${s.L}</b><span>${gNorm(e[1]).slice(0,4)}</span></div>`;
+  }).join('');
+  return `<div class="prow gtape"><span class="pn">${label}</span><div class="tape">${cells}</div></div>
+    <div class="gptr">${ptrTxt}</div>`;
+}
+
+function gSvg(ram, hi, curNode, prevNode){
+  const W=820,H=300,R=17;
+  const max=Math.max(1,...Object.values(ram));
+  const col=k=>GESP.has(k)?'#54D6AC':'#FF8168';
+  let edges='', labels='';
+  Object.entries(ram).forEach(([k,w])=>{
+    const [a,b]=k.split('>'), c=col(k), isHi=(k===hi);
+    const sw=(1.6+5*w/max).toFixed(1), mk=GESP.has(k)?'gA':'gB';
+    const glow=isHi?`style="filter:drop-shadow(0 0 5px ${c})"`:'';
+    const dash=GESP.has(k)?'':'stroke-dasharray="6 4"';
+    let d,lx,ly;
+    if(a===b){
+      const [x,y]=gXY(a);
+      if(a==='Buscar'){ d=`M${x-R+2},${y-9} C${x-66},${y-34} ${x-66},${y+34} ${x-R+2},${y+9}`; lx=x-52; ly=y; }
+      else { d=`M${x-9},${y-R+2} C${x-34},${y-66} ${x+34},${y-66} ${x+9},${y-R+2}`; lx=x; ly=y-52; }
+    }else{
+      const [x1,y1]=gXY(a),[x2,y2]=gXY(b);
+      const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),nx=-dy/L,ny=dx/L,cv=(k==='Carrito>Inicio')?-.3*L:.16*L;
+      const cx=(x1+x2)/2+nx*cv, cy=(y1+y2)/2+ny*cv;
+      const u1=Math.hypot(cx-x1,cy-y1), u2=Math.hypot(x2-cx,y2-cy);
+      const sx=x1+(cx-x1)/u1*(R+2), sy=y1+(cy-y1)/u1*(R+2);
+      const ex=x2-(x2-cx)/u2*(R+5), ey=y2-(y2-cy)/u2*(R+5);
+      d=`M${sx.toFixed(1)},${sy.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+      const tt=(k==='Carrito>Inicio')?.28:.5; lx=(1-tt)**2*x1+2*tt*(1-tt)*cx+tt*tt*x2; ly=(1-tt)**2*y1+2*tt*(1-tt)*cy+tt*tt*y2;
+    }
+    edges+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="${isHi?(+sw+1.5):sw}" ${dash} marker-end="url(#${mk})" opacity="${hi&&!isHi?.75:1}" ${glow}/>`;
+    labels+=`<g><circle cx="${lx}" cy="${ly}" r="${isHi?10:8}" fill="#0d1017" stroke="${c}" stroke-width="1"/><text x="${lx}" y="${ly+3.5}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="${isHi?10.5:9}" font-weight="700" fill="${isHi?'#fff':c}">${w}</text></g>`;
+  });
+  const nodes=Object.keys(GPOS).map(n=>{
+    const [x,y]=gXY(n), cur=n===curNode, prv=n===prevNode&&!cur;
+    const shape = n==='Otro'
+      ? `<rect x="${x-11}" y="${y-11}" width="22" height="22" transform="rotate(45 ${x} ${y})" fill="#64748B"/>`
+      : `<circle cx="${x}" cy="${y}" r="${R}" fill="#1E293B" stroke="${cur?'#fff':(prv?'#9caabd':'#3a4557')}" stroke-width="${cur?2.5:1.5}" ${prv?'stroke-dasharray="3 3"':''}/>`;
+    return `${shape}<text x="${x}" y="${y+(n==='Otro'?26:32)}" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="${cur?'#fff':'#9caabd'}" font-weight="${cur?700:500}">${n}</text>`;
+  }).join('');
+  return `<div class="gsvgw"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafo de navegación">
+    <defs>
+      <marker id="gA" viewBox="0 0 10 10" refX="7" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#54D6AC"/></marker>
+      <marker id="gB" viewBox="0 0 10 10" refX="7" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#FF8168"/></marker>
+    </defs>${edges}${nodes}${labels}</svg>
+    <div class="gleg"><span><i style="background:#54D6AC"></i>dentro de las 15 ARISTAS_ESPERADAS</span><span><i style="background:#FF8168"></i>fuera del embudo</span><span>número = peso (transiciones)</span></div></div>`;
+}
+
+/* Las 6 operaciones de un evento, tal como están en actualizar_grafo_observado() */
+function gOp(op, anim, extra){
+  if(!op) return `<div class="gop"><div class="gl"><span class="tx mut">Pulsa ▶ para consumir el primer evento.</span></div></div>`;
+  const a=anim?' anim':'', esp=op.edge&&GESP.has(op.edge);
+  const L=(d,w,wl,t)=>`<div class="gl${a}" style="--d:${d}"><span class="n0">${d+1}</span><span class="gw ${w}">${wl}</span><span class="tx">${t}</span></div>`;
+  const [pa,pb]=op.edge?op.edge.split('>'):[];
+  return `<div class="gop">
+    ${L(0,'k','KAFKA',`poll() → evento #${op.idx+1} de ${gChip(op.sid)} · page_url <i>"${op.url}"</i> · event_type ${op.et}`)}
+    ${L(1,'p','APP.PY',`normalizar_pagina(<i>"${op.url}"</i>) → <i>"${op.pg}"</i>`)}
+    ${L(2,'r','RAM',`ultima_pagina_sesion.get(${op.sid}) → ${op.prev===null?'<span class="bad">None</span> · primera vez que aparece'+(extra||''):`<i>"${op.prev}"</i>`}`)}
+    ${op.edge
+      ? L(3,'r','RAM',`aristas_observadas[(<i>"${pa}"</i>, <i>"${pb}"</i>)] : ${op.from} → <i>${op.to}</i> &nbsp;<span class="${esp?'ok':'bad'}">${esp?'verde · esperada':'rojo · fuera del embudo'}</span>`)
+      : L(3,'r','RAM',`<span class="mut">sin página anterior → no hay arista</span>`)}
+    ${op.edge
+      ? L(4,'d','SQLITE',`INSERT INTO historial_navegacion … ON CONFLICT DO UPDATE → (<i>${pa}</i>, <i>${pb}</i>, peso = <i>${op.to}</i>)`)
+      : L(4,'d','SQLITE',`<span class="mut">nada que guardar</span>`)}
+    ${L(5,'r','RAM',`ultima_pagina_sesion[${op.sid}] = <i>"${op.pg}"</i>`)}
+  </div>`;
+}
+
+function gStores(R, op, anim, opts={}){
+  const libRows = Object.keys(R.lib).length
+    ? Object.entries(R.lib).map(([s,p])=>`<tr class="${anim&&op&&op.sid===s?'fl':''}"><td>${gChip(s)}</td><td class="nm">${p}</td></tr>`).join('')
+    : `<tr class="emp"><td colspan="2">vacía</td></tr>`;
+  const keys=Object.keys(R.ram);
+  const edgeRows = keys.length
+    ? keys.map(k=>{const [a,b]=k.split('>'); const c=GESP.has(k)?'var(--ok)':'var(--bad)';
+        return `<tr class="${anim&&op&&op.edge===k?'fl':''}"><td style="color:${c}">${a} → ${b}</td><td class="nm">${R.ram[k]}</td><td class="nm">${R.db[k]}</td></tr>`;}).join('')
+    : `<tr class="emp"><td colspan="3">sin aristas todavía</td></tr>`;
+  return `<div class="eye">Dónde vive cada dato</div>
+    <div class="gstore"><div class="sh"><span class="gw r chip" style="background:color-mix(in srgb,var(--info) 20%,transparent);color:var(--info)">RAM</span><b>ultima_pagina_sesion</b></div>
+      <table class="gtab"><tr><th>session_id</th><th style="text-align:right">última página</th></tr>${libRows}</table>
+      <div class="sd">Diccionario Python en <code>st.session_state</code>. ${opts.libNote||'Se sobrescribe con cada evento. <b>No se guarda en disco.</b>'}</div></div>
+    <div class="gstore"><div class="sh"><span class="chip" style="background:color-mix(in srgb,var(--info) 20%,transparent);color:var(--info)">RAM</span><b>aristas_observadas</b><span class="chip" style="background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)">DISCO</span><b>historial_navegacion</b></div>
+      <table class="gtab"><tr><th>origen → destino</th><th style="text-align:right">RAM</th><th style="text-align:right">SQLite</th></tr>${edgeRows}</table>
+      <div class="sd">${opts.edgeNote||'El dibujo sale de la RAM. SQLite (<code>data/historical_alerts.db</code>, misma base que las alertas, otra tabla) guarda el total acumulado: es la copia que sobrevive a un reinicio.'}</div></div>`;
+}
+
+function sc7(step){
+  if(G.step!==step){
+    G.step=step; gStop(); G.anim=false;
+    G.i = GRANGE[step] ? GRANGE[step][0] : (step>=4?18:0);
+    if(GRANGE[step]){ setTimeout(()=>{ if(sc===7&&st===step&&!G.timer&&G.i<GRANGE[step][1]){ G.i++; G.anim=true; render(); gPlay(); render(); } },600); }
+  }
+  const anim=G.anim; G.anim=false;
+  let main='', insp='';
+
+  if(step===0){
+    main=`<div class="eye">Capa 5 · app.py · actualizar_grafo_observado()</div>
+      <div class="lbl" style="margin-bottom:7px">El mismo tópico <code>ecommerce-events</code>, dos lectores independientes</div>
+      ${gTape(18,12,11,'Flink','<span>grupo <b style="color:var(--fli)">tfm-analytics-group-prod</b> → va por el evento 12 · construye el vector</span>')}
+      ${gTape(18,5,4,'Dashboard','<span>grupo <b>tfm-dashboard-graph-group</b> → va por el evento 5 · construye el grafo</span>')}
+      <div data-from="0" class="note" style="margin-top:6px"><b>Leer no borra.</b> Cada grupo lleva su propio puntero (offset). El dashboard recibe <b>todos</b> los eventos, igual que Flink, sin quitarle ninguno. Las letras son sesiones (A, B, C, D) y llegan <b>intercaladas</b>.</div>
+      <div data-from="0" class="warnbox" style="margin-top:8px"><b>El grafo no pasa por Flink ni por el detector.</b> La Figura 9 de la memoria (volcado desde Flink → NetworkX offline) es de una versión anterior: vale la slide 9.</div>`;
+    insp=`<div class="eye">El consumidor del grafo</div>
+      <div class="jbox"><div class="jh"><span>app.py · main()</span></div><pre>consumer_eventos = get_kafka_consumer(
+    broker,                       <span class="k"># localhost:9094</span>
+    <span class="v">"ecommerce-events"</span>,
+    <span class="v">"tfm-dashboard-graph-group"</span>)
+actualizar_grafo_observado(consumer_eventos)
+
+<span class="k"># get_kafka_consumer():</span>
+auto_offset_reset=<span class="v">'latest'</span>
+enable_auto_commit=<span class="n">True</span></pre></div>
+      <div class="eye" style="margin-top:14px">Los cuatro grupos de consumidores</div>
+      <table class="gtab"><tr><th>grupo</th><th>lee</th></tr>
+        <tr><td>tfm-analytics-group-prod</td><td>ecommerce-events → Flink</td></tr>
+        <tr><td style="color:var(--das)">tfm-dashboard-graph-group</td><td>ecommerce-events → grafo</td></tr>
+        <tr><td>tfm-ml-detector-group</td><td>retail-feature-vectors</td></tr>
+        <tr><td>tfm-dashboard-viewer-group</td><td>ecommerce-alerts</td></tr></table>
+      <div class="note" style="margin-top:10px"><b>session_id ≠ group_id.</b> <code>session_id</code> es un dato del evento; <code>group_id</code> es el nombre del lector.</div>`;
+  }
+
+  else if(step===1){
+    const rows=[['/','Inicio'],['/categorias/zapatillas · /categorias/ropa','Categorías'],['/ofertas','Ofertas'],['/buscar','Buscar'],
+      ['/producto/zap-001 … /producto/ropa-011','Producto'],['/carrito','Carrito'],['/checkout','Checkout'],['/confirmacion','Confirmación'],['cualquier otra URL','Otro']]
+      .map(([u,c])=>`<tr><td>${u}</td><td>→</td><td>${c}</td></tr>`).join('');
+    main=`<div class="eye">De page_url a nodo</div>
+      <table class="gmap">${rows}</table>
+      <div style="margin-top:10px">${gSvg({},null,null,null)}</div>`;
+    insp=`<div class="eye">normalizar_pagina()</div>
+      <div class="jbox"><div class="jh"><span>app.py</span><span>9 categorías</span></div><pre>if url == <span class="v">"/"</span>:  return <span class="v">"Inicio"</span>
+if url.startswith(<span class="v">"/categorias"</span>): …
+if url.startswith(<span class="v">"/producto"</span>):  return <span class="v">"Producto"</span>
+…
+return <span class="v">"Otro"</span></pre></div>
+      <div class="note" style="margin-top:10px"><b>page_url, no page_view.</b> <code>page_view</code> es el <i>tipo</i> de evento (<code>event_type</code>). La página está en <code>page_url</code>.</div>
+      <div class="note" style="margin-top:8px"><b>«Otro»</b> es el nodo trampa (rombo gris en PyVis). Con el generador actual nunca se activa: todas sus URLs caen en las 8 categorías.</div>`;
+  }
+
+  else if(step===2||step===3){
+    const R=gRun(GEV.slice(0,G.i)), op=G.i>0?R.op:null, r=GRANGE[step];
+    const playing=!!G.timer;
+    main=`<div class="eye">Capa 5 · actualizar_grafo_observado() · evento a evento</div>
+      ${gTape(18,G.i,G.i-1,'Dashboard',`<span>puntero de <b>tfm-dashboard-graph-group</b> → ${G.i} de 18 eventos leídos</span>`)}
+      <div class="gbar">
+        <button class="fb${playing?' on':''}" data-g="play">${playing?'⏸ Pausa':'▶ Reproducir'}</button>
+        <button class="fb" data-g="step">Paso →</button>
+        <button class="fb" data-g="reset">↺ Volver a empezar</button>
+        <span class="cnt">evento ${G.i} / ${r[1]}</span></div>
+      <div class="gcols">${gOp(op,anim)}${gSvg(R.ram, op&&op.edge, op&&op.pg, op&&op.prev)}</div>`;
+    insp=gStores(R,op,anim);
+  }
+
+  else if(step===4){
+    const R=gRun(GEV);
+    main=`<div class="eye">Estado tras los 18 eventos</div>
+      ${gSvg(R.ram,null,null,null)}
+      <div class="lbl" style="margin:12px 0 6px">De dónde salen las aristas rojas (según el código del generador)</div>
+      <table class="gtab"><tr><th>arista</th><th>sesión</th><th>perfil en faker_producer.py</th></tr>
+        <tr><td style="color:var(--bad)">Producto → Buscar</td><td>${gChip('sess_B1c9')}</td><td>bot: salta al azar entre zap-001, zap-002 y /buscar</td></tr>
+        <tr><td style="color:var(--bad)">Buscar → Buscar</td><td>${gChip('sess_B1c9')}</td><td>bot</td></tr>
+        <tr><td style="color:var(--bad)">Checkout → Checkout</td><td>${gChip('sess_C4e2')}</td><td>checkout_drop: /carrito y luego /checkout repetido, sin compra</td></tr></table>
+      <div class="note" style="margin-top:10px"><b>Las sesiones normales y las de alta latencia solo recorren aristas verdes:</b> navegan por <code>NAVIGATION_GRAPH</code>, que coincide con las 15 esperadas. El grafo no ve la latencia.</div>`;
+    insp=`<div class="eye">Cómo se decide el color</div>
+      <div class="jbox"><div class="jh"><span>app.py</span></div><pre>es_normal = (origen, destino) <span class="k">in</span> ARISTAS_ESPERADAS
+color = <span class="v">"#10B981"</span> <span class="k">if</span> es_normal <span class="k">else</span> <span class="v">"#EF4444"</span></pre></div>
+      <div class="note" style="margin-top:10px"><b>No hay modelo aquí.</b> Es pertenencia a un conjunto fijo de 15 transiciones. El grafo <b>no lee</b> <code>is_anomaly</code> y <b>no alimenta</b> al detector.</div>
+      <div class="note" style="margin-top:8px"><b>Rojo ≠ alerta.</b> Rojo significa «fuera del embudo esperado». Qué sesiones son anómalas lo decide la capa 4, sobre el vector.</div>
+      <div class="note" style="margin-top:8px"><b>Grosor = frecuencia.</b> <code>1 + 5·peso/peso_max</code> en Matplotlib; <code>1 + 9·peso/peso_max</code> en PyVis.</div>`;
+  }
+
+  else if(step===5){
+    const rs=!!EXP.grestart, evs=GEV.concat([GEXTRA]);
+    const R=gRun(evs, rs?18:undefined), op=R.op;
+    main=`<div class="eye">Experimento · reinicio del dashboard antes del evento 19</div>
+      ${gTape(19,19,18,'Dashboard',`<span>evento 19: ${gChip('sess_A7f3')} vuelve a <b style="color:var(--ink)">/confirmacion</b></span>`)}
+      ${rs?`<div class="warnbox" style="margin-bottom:8px"><b>Proceso reiniciado.</b> La RAM arranca vacía. <code>initialize_session_state()</code> recarga los pesos desde SQLite, pero la libreta no está en disco: llega vacía.</div>`:''}
+      <div class="gcols">${gOp(op,true,rs?' <b style="color:var(--bad)">(se perdió con el reinicio)</b>':'')}${gSvg(R.ram, op.edge, op.pg, op.prev)}</div>
+      <div class="note" style="margin-top:10px">${rs
+        ?'<b>Se perdió 1 transición</b> (Confirmación → Confirmación): una por cada sesión activa en el momento del reinicio. Todo lo demás se recuperó.'
+        :'<b>Sin reinicio:</b> la libreta sabía que A estaba en Confirmación, así que suma Confirmación → Confirmación (verde, esperada).'}</div>`;
+    insp=gStores(R,op,true,{
+      libNote: rs?'<b>Tras el reinicio solo contiene lo que llegó después.</b> No hay copia en disco.':undefined,
+      edgeNote: rs?'Los pesos se recargaron desde SQLite: <code>SELECT origen, destino, peso FROM historial_navegacion</code>. RAM y disco vuelven a coincidir.':undefined});
+  }
+
+  else if(step===6){
+    const R=gRun(GEV), cl=!!EXP.gclear;
+    main=`<div class="eye">Un ciclo de Streamlit · main() de arriba abajo</div>
+      <div class="gcy">
+        <div><b>poll alertas</b>100 ms · tópico ecommerce-alerts</div>
+        <div><b>poll eventos</b>100 ms · lote de ~60 eventos (30 ev/s × 2 s) · +1 y SQLite por cada uno</div>
+        <div><b>dibuja</b>KPIs · gráficos · grafo · consola</div>
+        <div><b>time.sleep(2)</b>espera</div>
+        <div><b>st.rerun()</b>vuelve a empezar</div></div>
+      <div class="gcyb"><i></i></div>
+      ${cl?`<div class="gseq">
+        <div class="gl anim" style="--d:0"><span class="n0">1</span><span class="gw r">RAM</span><span class="tx">Se vacían <i>alerts_history</i>, <i>ultima_pagina_sesion</i> y <i>aristas_observadas</i> → <i>st.rerun()</i></span></div>
+        <div class="gl anim" style="--d:1"><span class="n0">2</span><span class="gw d">SQLITE</span><span class="tx">initialize_session_state(): aristas vacías → <i>SELECT … FROM historial_navegacion</i> → recargadas</span></div>
+        <div class="gl anim" style="--d:2"><span class="n0">3</span><span class="gw d">SQLITE</span><span class="tx">alertas vacías → <i>SELECT raw_json FROM alerts … LIMIT tope</i> → recargadas</span></div>
+        <div class="gl anim" style="--d:3"><span class="n0">4</span><span class="gw p">APP.PY</span><span class="tx">Se dibuja: <span class="ok">el grafo sale igual</span>. Lo único que se perdió es la libreta.</span></div></div>`:''}
+      ${gSvg(R.ram,null,null,null)}`;
+    insp=`<div class="eye">Conteo en vivo, vista por ciclos</div>
+      <div class="jbox"><div class="jh"><span>app.py · main()</span></div><pre>initialize_session_state(max_buffer)
+… poll(timeout_ms=<span class="n">100</span>)   <span class="k"># alertas</span>
+actualizar_grafo_observado(…) <span class="k"># eventos</span>
+… KPIs, gráficos, grafo, consola
+time.sleep(<span class="n">2</span>)
+st.rerun()</pre></div>
+      <div class="note" style="margin-top:10px"><b>Frase para el tribunal:</b> el conteo se actualiza con cada evento consumido; la vista se redibuja una vez por ciclo, cada ~2 s.</div>
+      <div class="note" style="margin-top:8px"><b>Acumulado.</b> SQLite no se borra entre ejecuciones: el grafo suma todas las corridas. Por eso las capturas dicen «Tiempo Real &amp; Histórico».</div>
+      <div class="note" style="margin-top:8px"><b>«Limpiar memoria gráfica» = refresco de vista.</b> Vacía la RAM, pero en el mismo ciclo todo se recarga desde SQLite.</div>
+      <div class="warnbox" style="margin-top:8px"><b>Demo: una sola pestaña.</b> El estado es por pestaña (<code>st.session_state</code>), pero el consumidor Kafka es compartido (<code>cache_resource</code>). Con dos pestañas, cada una vería parte de los eventos. <i>Inferencia del código: confirmar con Benjamín.</i></div>`;
+  }
+  return {main,insp};
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-g]'); if(!b) return;
+  const k=b.dataset.g, r=GRANGE[st];
+  if(!r) return;
+  if(k==='play'){ if(G.timer) gStop(); else { if(G.i>=r[1]) G.i=r[0]; gPlay(); } render(); }
+  if(k==='step'){ gStop(); if(G.i<r[1]){G.i++; G.anim=true;} render(); }
+  if(k==='reset'){ gStop(); G.i=r[0]; render(); }
+});
+
+
 /* ════════════ GUION ════════════ */
 const SCENES=[
 {n:'Ingesta',s:'Faker',f:sc0,steps:[
@@ -990,6 +1350,17 @@ const SCENES=[
  {t:'El límite estructural',b:`Ninguna anomalía puede detectarse antes de que cierre su ventana. Es el precio de los 10 segundos, y es una decisión de diseño defendible: ventanas más cortas dan alertas más rápidas con menos evidencia; más largas, lo contrario.`},
  {t:'La frase de cierre',b:`<i>«Kafka no es un componente del pipeline: es el tejido que lo sostiene. Cada capa consume de un tópico y produce en otro, sin conocer jamás la identidad de sus vecinos.»</i><p>Consulta el cajón <b>Objetivos e hipótesis</b> para repasar qué queda validado, qué es parcial y qué es trabajo futuro.</p>`,
   quiz:{q:'¿Por qué el vector descarta page_url si el TFM analiza grafos de navegación?',a:'Porque son <b>dos ramas paralelas</b>. La rama de detección solo necesita comportamiento numérico. El grafo se construye aparte, en <code>app.py</code>, leyendo directamente <code>ecommerce-events</code> con su propio <code>group_id</code>. Otra ventaja del log inmutable: dos consumidores, dos propósitos, el mismo flujo.'}}
+]},
+{n:'Grafo',s:'Grafo',f:sc7,steps:[
+ {t:'Un segundo lector del mismo tópico',b:`El grafo <b>no lo construye Flink</b>: lo construye el dashboard, leyendo directamente <code>ecommerce-events</code> con su propio grupo, <code>tfm-dashboard-graph-group</code>.<p>Cada grupo lleva <b>su propio puntero</b>. Por eso el dashboard recibe todos los eventos sin quitarle ninguno a Flink. Lee desde <code>latest</code>: solo lo que llega después de arrancar.</p>`},
+ {t:'De URL a nodo: nueve categorías',b:`<code>normalizar_pagina()</code> traduce cada <code>page_url</code> a una categoría: ocho páginas del sitio y «Otro». <code>/producto/zap-001</code> y <code>/producto/ropa-010</code> son el mismo nodo: <b>Producto</b>.<p>Las posiciones de los nodos son fijas (<code>POSICIONES_NODOS</code>): el embudo se lee de izquierda a derecha.</p>`},
+ {t:'La libreta: la última página de cada sesión',b:`El evento <b>no trae la página anterior</b>. El dashboard la recuerda en un diccionario en RAM, <code>ultima_pagina_sesion</code>, guardado en <code>st.session_state</code> para que sobreviva a cada ciclo de Streamlit.<p>Mira los cuatro primeros eventos: cada sesión aparece por primera vez, la libreta se llena y <b>no nace ninguna arista</b>.</p>`,
+  quiz:{q:'¿Por qué el primer evento de una sesión no suma ninguna arista?',a:'Porque una arista necesita <b>dos</b> páginas: la anterior y la actual. En el primer evento, <code>ultima_pagina_sesion.get(sesion)</code> devuelve <code>None</code>. Solo se anota la página actual, para usarla con el siguiente evento.'}},
+ {t:'Evento a evento: el +1',b:`Cada evento repite seis pasos: leer, normalizar, consultar la libreta, sumar 1 a la arista en RAM, guardar el nuevo peso en SQLite y actualizar la libreta.<p>Los eventos de las cuatro sesiones llegan <b>intercalados</b>: sin la libreta se uniría la página de una sesión con la de otra. Y como la clave de Kafka es <code>session_id</code>, los eventos de cada sesión llegan <b>en orden</b>.</p>`},
+ {t:'Verde o rojo: el embudo esperado',b:`El color no lo decide un modelo: es <b>pertenencia a un conjunto</b>. Si la transición está entre las 15 <code>ARISTAS_ESPERADAS</code>, verde; si no, rojo. El grosor es la frecuencia.<p>El grafo <b>no lee</b> <code>is_anomaly</code> ni alimenta al detector: es observabilidad visual. Muestra <b>dónde</b> se sale el usuario del embudo.</p>`},
+ {t:'RAM y disco: qué sobrevive a un reinicio',b:`Los pesos viven dos veces: en RAM, para dibujar, y en SQLite, para no perderlos. La libreta vive <b>solo en RAM</b>.<p>Pulsa el experimento: el dashboard se reinicia justo antes de que la sesión A vuelva a Confirmación.</p>`,exp:{k:'grestart',on:'Deshacer el reinicio',off:'Reiniciar el dashboard'}},
+ {t:'Conteo por evento, vista por ciclos',b:`Streamlit vuelve a ejecutar <code>app.py</code> completo en cada ciclo: lee un lote de eventos, suma, dibuja y espera 2 s. A 30 eventos por segundo, cada ciclo procesa unos 60.<p>El <b>conteo</b> se actualiza con cada evento; la <b>vista</b>, cada ~2 s. Como SQLite no se borra entre ejecuciones, el grafo es <b>acumulado</b>.</p>`,exp:{k:'gclear',on:'Volver',off:'Pulsar «Limpiar memoria gráfica»'},
+  quiz:{q:'Reinicias el dashboard en plena demo. ¿Qué se pierde?',a:'Solo la <b>libreta</b> (<code>ultima_pagina_sesion</code>): en cada sesión activa, la siguiente transición no se cuenta. Los pesos se recargan desde SQLite y las alertas desde su tabla, así que el grafo reaparece igual. Lo mismo pasa con el botón «Limpiar memoria gráfica».'}}
 ]}];
 
 /* ════════════ CAJONES ════════════ */
