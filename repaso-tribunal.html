@@ -102,6 +102,7 @@ tr.total td{font-weight:600;border-bottom:0}
       <button role="tab" id="tab-0" aria-selected="true" data-block="0">1–10</button>
       <button role="tab" id="tab-1" aria-selected="false" data-block="1">11–20</button>
       <button role="tab" id="tab-2" aria-selected="false" data-block="2">21–30</button>
+      <button role="tab" id="tab-3" aria-selected="false" data-block="3">31–40</button>
     </div>
     <ul class="qlist" id="qlist"></ul>
   </aside>
@@ -865,6 +866,277 @@ Con P = 1:  F1 = 2R / (1 + R)</pre>
 </ul>
 <div class="careful"><strong>Cuida esto.</strong> "La investigación queda FUERA DEL ÁMBITO", nunca "los datos sintéticos cumplen el RGPD". En la ley peruana la minimización se llama principio de proporcionalidad. Reglamento peruano: publicado en noviembre de 2024, vigente desde marzo de 2025. No menciones multas.</div>`
 }
+,
+{
+ t:"Cómo se construye el grafo en vivo", topic:"Grafo · construcción",
+ q:"En el título hablan de grafos de navegación. Explíquenos cómo se construye ese grafo: de dónde salen los datos, qué componente lo arma y cómo un evento se convierte en una arista con peso.",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>El grafo no lo construye Flink: lo construye el dashboard, directamente desde Kafka. Tiene un segundo consumidor que lee el mismo tópico que Flink, ecommerce-events, con su propio grupo, tfm-dashboard-graph-group. Por eso recibe todos los eventos sin quitarle ninguno a Flink.</p>
+<p>Cada nodo es una categoría de página: ocho del sitio y "Otro". Cada arista es una transición observada en el flujo; su grosor es la frecuencia.</p>
+<p>Por cada evento hace tres cosas. Traduce la URL a su categoría. Busca la última página de esa sesión y, si existe, suma uno a la arista de la anterior a la actual. Y guarda la página actual como la última. Hay que recordarla porque los eventos de varias sesiones llegan intercalados.</p>
+<p>Los pesos se guardan en memoria y en SQLite, en una tabla de origen, destino y peso; si el dashboard se reinicia, el grafo se recupera desde ahí. El conteo se actualiza con cada evento; la vista, cada dos segundos aproximadamente.</p></div>
+<h3>Ejemplo: sesión A, intercalada con B</h3>
+<div class="tbl"><table>
+<tr><th>Llega</th><th>Categoría</th><th>Última página de A</th><th>Qué pasa</th></tr>
+<tr><td>A · /categorias/zapatillas</td><td>Categorías</td><td>(ninguna)</td><td>Sin arista; anota "Categorías"</td></tr>
+<tr><td>B · /ofertas</td><td>Ofertas</td><td>—</td><td>Se procesa B por separado</td></tr>
+<tr><td>A · /producto/zap-001</td><td>Producto</td><td>Categorías</td><td>Categorías → Producto <b>+1</b></td></tr>
+<tr><td>A · /carrito</td><td>Carrito</td><td>Producto</td><td>Producto → Carrito <b>+1</b></td></tr>
+</table></div>
+<h3>Dónde vive cada cosa (todo en app.py)</h3>
+<div class="tbl"><table>
+<tr><th>Qué</th><th>Dónde</th><th>¿Sobrevive a un reinicio?</th></tr>
+<tr><td>Última página de cada sesión ("libreta")</td><td>RAM: <code>ultima_pagina_sesion</code> en <code>st.session_state</code></td><td>No</td></tr>
+<tr><td>Peso de cada arista</td><td>RAM (<code>aristas_observadas</code>) y SQLite (<code>historial_navegacion</code>: origen, destino, peso)</td><td>Sí</td></tr>
+</table></div>
+<ul class="pts">
+<li><code>normalizar_pagina()</code> usa <code>page_url</code>, no <code>event_type</code>: page_view es el tipo de evento, no la página.</li>
+<li>Nadie ofrece la "libreta" hecha: es un diccionario de Python que Streamlit conserva entre ciclos. Kafka no sabe qué es "la página anterior".</li>
+<li>SQLite no guarda nodos por separado: los nodos salen de origen y destino. Es el mismo archivo que las alertas (<code>data/historical_alerts.db</code>), en otra tabla.</li>
+<li>El orden importa: la clave <code>session_id</code> lleva todos los eventos de una sesión a la misma partición, en orden.</li>
+<li>Hasta 2,000 sesiones rastreadas; si se pasa, borra las más antiguas. Con ~10 concurrentes, casi nunca se alcanza.</li>
+<li>Es la misma idea que el estado por clave de Flink, pero hecha a mano y sin checkpointing.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> El grafo no pasa por Flink ni por el detector: se DEFINE en el sprint II y se CONSTRUYE en el dashboard. La Figura 9 (volcado de Flink → NetworkX offline) conserva una versión anterior. No confundas session_id con group_id. "En vivo" = el conteo por evento; la vista, por ciclos. El grafo es acumulado: SQLite suma todas las corridas ("Tiempo Real &amp; Histórico").</div>`
+},
+{
+ t:"Verde, rojo y qué revela el grafo", topic:"Grafo · lectura",
+ q:"¿Qué significa que una arista salga en rojo en su grafo? ¿El grafo detecta anomalías?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>En el grafo, rojo no quiere decir alerta. Quiere decir fuera del embudo esperado.</p>
+<p>Definimos una lista fija de quince transiciones esperadas: el recorrido normal de compra. Si una transición observada está en esa lista, se dibuja en verde; si no, en rojo. No hay un modelo: es pertenencia a un conjunto.</p>
+<p>En nuestros datos, el rojo lo producen los bots, que saltan entre producto y búsqueda, y los abandonos en el pago, que se quedan dando vueltas en Checkout. En una tienda real también puede ser una ruta legítima que no previmos; el grafo no lo distingue. Y no ve la latencia: una sesión lenta que navega normal sale en verde.</p>
+<p>El grafo no alimenta al detector. Es observabilidad visual: muestra dónde se sale el usuario del embudo. Qué sesión es anómala lo decide la capa de detección, sobre el vector.</p></div>
+<h3>Qué revela cada rojo (según el código del generador)</h3>
+<div class="tbl"><table>
+<tr><th>Arista roja</th><th>La produce</th><th>Por qué</th></tr>
+<tr><td>Producto → Buscar</td><td>bot</td><td>Salta al azar entre zap-001, zap-002 y /buscar</td></tr>
+<tr><td>Buscar → Buscar</td><td>bot</td><td>Repite la búsqueda sin avanzar</td></tr>
+<tr><td>Checkout → Checkout</td><td>checkout_drop</td><td>/carrito y luego /checkout repetido, sin compra</td></tr>
+<tr><td>(ninguna)</td><td>high_latency</td><td>Navega normal: el grafo no ve el tiempo</td></tr>
+</table></div>
+<ul class="pts">
+<li>Las 15 <code>ARISTAS_ESPERADAS</code> coinciden con el <code>NAVIGATION_GRAPH</code> del generador: las sesiones normales solo producen verde. Que se hiciera a propósito es inferencia: confirmar con Benjamín.</li>
+<li>Producto → Buscar sale rojo porque no está en la lista (sí está Buscar → Producto). En una tienda real sería normal: con datos reales hay que calibrar la lista.</li>
+<li>9 categorías (8 + "Otro"). "Otro" es el nodo trampa; con el generador actual nunca se activa.</li>
+<li>Grosor = frecuencia: un rojo fino es un caso aislado; uno grueso, un patrón.</li>
+<li>Complementa al detector: el detector dice QUÉ sesión; el grafo, POR DÓNDE se sale. El lazo en Checkout apunta al pago, que ninguna regla mira.</li>
+<li>Capturas con muchas aristas rojas finas (Inicio → Confirmación…): el generador actual no puede producirlas. Explicación: SQLite acumula corridas de versiones anteriores. Inferencia: confirmar con Benjamín.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Rojo ≠ alerta ≠ anomalía: di "fuera del embudo definido". No digas que el grafo "detecta" anomalías. El grafo no lee is_anomaly.</div>`
+},
+{
+ t:"Grafos en tiempo real: qué y cómo", topic:"Grafo · alcance",
+ q:"El título dice \"análisis de grafos en tiempo real\". ¿Qué parte es tiempo real, qué parte es análisis y con qué herramientas lo hacen?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Hay que separar tres cosas: construcción, visualización y análisis.</p>
+<p>La construcción es en tiempo real: cada evento consumido suma uno a su transición, sin esperar a un lote.</p>
+<p>La visualización se actualiza por ciclos, cada dos segundos aproximadamente, en dos modos a elección del usuario: uno estático, con NetworkX y Matplotlib, y uno interactivo, con PyVis, con posiciones fijas y filtros de ruido y de transiciones fuera del embudo. Los dos parten de los mismos datos.</p>
+<p>El análisis, en el prototipo, es visual y estructural: cada transición se compara con el embudo esperado y se pondera por frecuencia. No calculamos métricas topológicas como centralidad o ciclos, y el grafo vive en SQLite, que no es una base de grafos. Ese es el siguiente paso, con una base como Neo4j.</p></div>
+<div class="tbl"><table>
+<tr><th>Parte</th><th>¿Tiempo real?</th><th>Cómo</th></tr>
+<tr><td>Construcción (conteo)</td><td>Sí</td><td>+1 por evento consumido</td></tr>
+<tr><td>Visualización</td><td>Por ciclos</td><td><code>time.sleep(2)</code> + <code>st.rerun()</code></td></tr>
+<tr><td>Análisis</td><td>Visual y estructural</td><td>Verde/rojo frente a 15 aristas + grosor por frecuencia</td></tr>
+<tr><td>Métricas de Newman</td><td>No implementadas</td><td>Centralidad, ciclos, caminos → trabajo futuro</td></tr>
+</table></div>
+<h3>Quién hace qué</h3>
+<pre>STREAMLIT  = el tablero: página, barra lateral, KPIs, consola,
+             memoria entre ciclos (st.session_state) y el ciclo (st.rerun)
+NetworkX   = estructura DiGraph, solo para el dibujo estático
+Matplotlib = dibuja el modo estático (st.pyplot)
+PyVis      = librería Python que genera HTML + JavaScript (vis.js):
+             zoom, cursor con el peso, filtros (components.html)
+Plotly     = los dos gráficos de métricas, NO el grafo
+Conteo     = diccionarios de Python propios, ninguna librería</pre>
+<ul class="pts">
+<li>PyVis con física desactivada (<code>toggle_physics(False)</code>) y posiciones fijas: el embudo se lee siempre de izquierda a derecha.</li>
+<li>Filtros de PyVis: "ocultar flechas con menos de X clics" y "mostrar solo anomalías (rojo)".</li>
+<li>Si preguntan "¿el título exagera?": describe la arquitectura (grafo construido desde el flujo); el análisis entregado es el nivel básico; las métricas topológicas son el siguiente paso.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Nunca "la vista se actualiza evento a evento". No digas "NetworkX analiza el grafo": solo arma la estructura para dibujar. Newman solo por la definición. No digas "no hicimos análisis": di "análisis visual y estructural". Neo4j es "p. ej.", no una decisión.</div>`
+},
+{
+ t:"El dashboard y sus dos fuentes", topic:"Dashboard",
+ q:"¿Qué muestra el dashboard, de dónde saca sus datos y cómo se lee?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>El dashboard es la capa de observabilidad, hecho en Streamlit. Tiene dos consumidores de Kafka. Uno lee los eventos crudos de ecommerce-events para construir el grafo. El otro lee ecommerce-alerts, donde el detector publica solo las alertas; de ahí salen las tarjetas, los gráficos y la consola forense. Al arrancar, ambos recuperan su historial desde SQLite.</p>
+<p>Arriba, cuatro tarjetas: alertas en memoria, de reglas, del modelo y de bots. Luego, un gráfico de clics frente a latencia media, por dispositivo, donde se separan los bots abajo, la latencia alta arriba y las alertas del modelo en la franja normal; y otro que cuenta alertas por dispositivo. Después, el grafo. Al final, la consola: una fila por alerta, con sesión, usuario, dispositivo, clics, latencia, qué capa disparó y el motivo de la regla.</p></div>
+<h3>El esquema</h3>
+<pre>Faker → ecommerce-events ─┬─► Flink → retail-feature-vectors → Detector
+                          │                     (solo ALERTAS + SQLite alerts + CSV)
+                          │                                   ↓
+                          │                            ecommerce-alerts
+                          ▼                                   ▼
+┌──────────── DASHBOARD · app.py · STREAMLIT ─────────────────────────────┐
+│ Consumidor 1: ecommerce-events     Consumidor 2: ecommerce-alerts        │
+│ grupo tfm-dashboard-graph-group    grupo tfm-dashboard-viewer-group      │
+│ cada EVENTO → GRAFO                cada ALERTA → KPIs, gráficos, consola │
+│ Respaldo: SQLite historial_nav.    Respaldo: SQLite alerts               │
+│ Estático: Matplotlib + NetworkX    KPIs y consola: Streamlit             │
+│ Interactivo: PyVis                 Gráficos: Plotly                      │
+└──────────────────────────────────────────────────────────────────────────┘</pre>
+<ul class="pts">
+<li>Slider "Tope de Memoria": 100–2,000, por defecto 1,200. Aunque dice "(Eventos)", limita ALERTAS. Distinto de las 2,000 sesiones del grafo.</li>
+<li>Los KPIs cuentan las alertas en memoria (≤ 1,200), no las 13,696 del CSV.</li>
+<li>Timestamp vacío: el vector no trae marca de tiempo; el detector copia <code>None</code>. Misma causa por la que H1 no se midió.</li>
+<li>ML_Score = 0.0 en el CSV = "el modelo no disparó". La consola no muestra el score.</li>
+<li>"Limpiar memoria gráfica" vacía la RAM, pero en el mismo ciclo todo se recarga desde SQLite: refresco de vista. Solo se pierde la libreta.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> "Alertas en Ventana" no es la ventana de 10 s de Flink: es el tope de memoria. "Detectado por IA" → di "por el modelo". "Motivo Regla" muestra solo la primera regla (R1 → R2 → R3). "📡 Conectado al Clúster Reactivo" es un mensaje fijo, no comprueba la conexión. Streamlit no dibuja los gráficos: lo hace Plotly.</div>`
+},
+{
+ t:"Figura 9, UI 8081 y la demo", topic:"Demo · riesgos",
+ q:"Su Figura 9 muestra el grafo como un volcado de Flink analizado offline con NetworkX. ¿Así funciona? ¿Y nos puede mostrar el job de Flink en su interfaz web?",
+ a:`<h3>Para decir en voz alta · Figura 9</h3>
+<div class="say"><p>No. La Figura 9 conserva una versión anterior del diseño. En la versión final, Flink no vuelca nada: el dashboard lee los eventos directamente de Kafka y construye el grafo en vivo, como describe la sección 5.6 y muestra la slide 9. Además, en Docker Compose corren Kafka y Flink; los servicios de Python corren en el host. El orden de las cinco capas de la figura sí es correcto.</p></div>
+<h3>Para decir en voz alta · UI 8081</h3>
+<div class="say"><p>En el prototipo, Flink corre embebido: el job se ejecuta dentro del proceso de Python, en un minicluster local, con paralelismo uno. Los contenedores de JobManager y TaskManager están desplegados como infraestructura objetivo, pero no ejecutan el job; por eso su interfaz, en el puerto 8081, muestra cero jobs. Lo que sí mostramos es el resultado: los vectores que llegan al detector y las alertas en el dashboard. Llevar el job al clúster es el primer paso de la evolución, sin cambiar la lógica.</p></div>
+<div class="tbl"><table>
+<tr><th>La Figura 9 dice</th><th>Versión final</th></tr>
+<tr><td>"Dump" desde Flink → NetworkX offline</td><td>Dashboard lee ecommerce-events y arma el grafo en vivo</td></tr>
+<tr><td>"Todos los componentes en contenedores"</td><td>Compose: solo Kafka y Flink; Python (incluido Flink embebido) en el host</td></tr>
+<tr><td>Omite dos tópicos</td><td>Son tres (simplificación menor)</td></tr>
+<tr><td>Capas 1 → 5</td><td>Correcto</td></tr>
+</table></div>
+<h3>Demo (slide 13, video ~2 min)</h3>
+<ul class="pts">
+<li>Mostrar: 1) tarjetas KPI; 2) consola con una alerta de regla y una del modelo; 3) grafo: embudo verde, lazo rojo en Checkout y Producto ↔ Buscar.</li>
+<li>No abrir la UI 8081. No abrir dos pestañas del dashboard (consumidor compartido; inferencia, confirmar con Benjamín). No pulsar "Limpiar memoria gráfica". No presentar "Conectado al Clúster Reactivo" como prueba de conexión.</li>
+<li>Plan B: anexo A6 (capturas) + PDF de pantallazos (pendiente del video).</li>
+<li>Confirmar con Benjamín: video con los tres elementos y grafo con historial limpio.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Nunca "PyFlink simula Flink": es Flink real embebido. No digas "la Figura 9 está mal": di "conserva una versión anterior". La razón del modo embebido no está en el código: confirmar con Benjamín.</div>`
+},
+{
+ t:"Limitaciones del trabajo", topic:"Limitaciones",
+ q:"¿Cuáles son las principales limitaciones de su trabajo?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Las agrupamos en cuatro, empezando por la más importante.</p>
+<p>Primero, la evaluación. Evaluamos sobre el registro de alertas, sin tráfico normal y sin usar las etiquetas del generador. Por eso la precisión es uno por construcción, y no podemos decir cuántas alertas son anomalías reales. La corrección es usar las etiquetas solo para evaluar, guardar todos los vectores y calcular la matriz de confusión.</p>
+<p>Segundo, la infraestructura. Trabajamos con enfoque de producto mínimo viable: Flink embebido, paralelismo uno, una partición y sin checkpointing. Sin garantía de entrega, si Flink se cae, se pierden los eventos de ese intervalo. El siguiente paso es el clúster, con checkpointing y exactly-once.</p>
+<p>Tercero, la detección. Isolation Forest se entrenó una sola vez con 40 vectores sin filtrar, y la regla R3 nunca se activó, porque el generador no supera 14 clics por sesión.</p>
+<p>Cuarto, la medición y los datos. La latencia del pipeline no está instrumentada, el grafo no calcula métricas topológicas y los datos son sintéticos.</p>
+<p>Son límites del prototipo, y cada uno tiene un siguiente paso concreto.</p></div>
+<div class="tbl"><table>
+<tr><th>Bloque</th><th>Limitación (slide 16)</th><th>Siguiente paso</th></tr>
+<tr><td>1 Evaluación</td><td>Solo alertas; sin tráfico normal; etiquetas no usadas</td><td>Etiquetas solo para evaluar + todos los vectores + matriz de confusión</td></tr>
+<tr><td>2 Infraestructura</td><td>Embebido, paralelismo 1, 1 partición, sin checkpointing</td><td>Clúster, N particiones, checkpointing, event time, exactly-once</td></tr>
+<tr><td>3 Detección</td><td>IF entrenado una vez con 40 vectores sin filtrar</td><td>Warmup mayor filtrado + reentrenamiento</td></tr>
+<tr><td></td><td>R3 sin ejercitar (máx. 14 clics, umbral 35)</td><td>Perfil click flood + recalibrar</td></tr>
+<tr><td>4 Medición y datos</td><td>Latencia no instrumentada</td><td>Dos marcas: cierre de ventana y publicación</td></tr>
+<tr><td></td><td>Grafo en SQLite sin métricas</td><td>Base de grafos (p. ej. Neo4j)</td></tr>
+<tr><td></td><td>Datos sintéticos</td><td>Datos reales bajo el marco legal (cap. 4)</td></tr>
+</table></div>
+<h3>Repreguntas</h3>
+<div class="tbl"><table>
+<tr><th>Repregunta</th><th>Respuesta corta</th></tr>
+<tr><td>¿Qué garantía tienen hoy?</td><td>Ninguna configurada. El tramo de Flink se comporta como at-most-once (latest + sin checkpoint + sink NONE): no duplica, pero ante una caída pierde. Los consumidores Python retoman desde su posición guardada: pueden repetir algunas, no perder.</td></tr>
+<tr><td>¿Por qué no exactly-once?</td><td>Por alcance del producto mínimo viable: primero el flujo de extremo a extremo. (Confirmar con Benjamín.)</td></tr>
+<tr><td>¿Lo haría más lento?</td><td>Casi nada: checkpoint asíncrono (Carbone) y estado de pocos KB. El costo real es latencia de publicación.</td></tr>
+<tr><td>¿Afectaría al modelo?</td><td>La calidad, no: mismos vectores. El tiempo hasta la alerta, sí: con checkpoints de ~1 s, H1 sigue alcanzable.</td></tr>
+<tr><td>¿No es mejor descartar el atraso?</td><td>Para una demo, aceptable; pero lo perdido puede ser la evidencia. Con checkpointing no hay que elegir.</td></tr>
+</table></div>
+<ul class="pts">
+<li>Fuera de la slide: time-to-insight no medido contra batch; ventanas sin memoria; processing time; aristas esperadas a medida del generador; IP y usuario sin plazo de borrado; el modelo no ve a los bots (A5).</li>
+<li>Producto mínimo viable (MVP) = la versión mínima que ya funciona de extremo a extremo, no "la mejor versión".</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Empieza por la evaluación. Cierra con "límites del prototipo, cada uno con su siguiente paso". No digas "no medimos nada": cobertura (43 % y 62 %) y solapamiento (5 %) sí se midieron. No digas "optamos por at-most-once" ni "para agilizar el procesamiento". En "latest", Flink sin checkpoint = siempre desde lo último; consumidores Python = desde lo último solo si el grupo no tiene posición guardada.</div>`
+},
+{
+ t:"Trabajo futuro en orden", topic:"Prospectiva",
+ q:"Si tuvieran seis meses más, ¿qué harían primero y por qué?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Lo organizaríamos en tres etapas, con un criterio: primero medir bien, después robustecer y al final ampliar.</p>
+<p>Primero, medir. Usaríamos las etiquetas del generador solo para evaluar, guardaríamos todos los vectores y calcularíamos la matriz de confusión. En paralelo, propagaríamos la marca de tiempo para medir la latencia del pipeline y montaríamos un proceso batch de contraste para medir el time-to-insight. Eso cierra H1 y el objetivo cinco.</p>
+<p>Segundo, robustecer. En la detección: un warmup mayor filtrado por las reglas, reentrenamiento periódico y un perfil de click flood para ejercitar R3. En la infraestructura: Flink en clúster, con checkpointing, exactly-once, event time y varias particiones.</p>
+<p>Tercero, ampliar. Métricas topológicas del grafo sobre una base de grafos, y validación con datos reales bajo el marco legal que revisamos.</p>
+<p>El orden importa: no tiene sentido escalar un sistema cuya precisión real todavía no conocemos.</p></div>
+<div class="tbl"><table>
+<tr><th>Etapa</th><th>Qué</th><th>Cierra</th></tr>
+<tr><td>1 · Medir (mes 1–2)</td><td>Etiquetas solo para evaluar + todos los vectores + matriz de confusión por tipo</td><td>Circularidad de H2; "anomalías reales"</td></tr>
+<tr><td></td><td>Marca de tiempo propagada; dos marcas</td><td>H1 → medida</td></tr>
+<tr><td></td><td>Pipeline batch de contraste</td><td>Time-to-insight medido; OE5 completo</td></tr>
+<tr><td>2 · Robustecer (mes 3–4)</td><td>Warmup filtrado + reentrenamiento; click flood + recalibrar R3</td><td>Modelo de 40 vectores; R3</td></tr>
+<tr><td></td><td>Clúster, checkpointing, exactly-once, event time, N particiones</td><td>Entorno local; at-most-once</td></tr>
+<tr><td>3 · Ampliar (mes 5–6)</td><td>Base de grafos: centralidad, ciclos, caminos; calibrar aristas esperadas</td><td>Grafo solo visual</td></tr>
+<tr><td></td><td>Datos reales: seudonimizar IP, plazo de borrado</td><td>Datos sintéticos; privacidad por defecto</td></tr>
+</table></div>
+<ul class="pts">
+<li>Más allá: detección entre ventanas (estado por sesión o session windows); supervisado con etiquetas de analistas; predicción de la siguiente página sobre el flujo (línea de Li et al., 2025).</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Da el criterio antes que la lista. Etiquetas solo para evaluar: nunca "entrenaríamos con las etiquetas". Los meses son una propuesta, no un compromiso de la memoria. Neo4j es "p. ej.". Di "siguiente paso", nunca "lo que nos faltó".</div>`
+},
+{
+ t:"¿Anomalías reales? Las etiquetas", topic:"Trampa · evaluación",
+ q:"¿Su sistema detecta anomalías reales? Y si el generador ya etiquetaba cada evento, ¿por qué no usaron esas etiquetas?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>Sobre la primera: con nuestra evaluación no podemos afirmarlo para todas las alertas. Evaluamos sobre el registro de alertas, sin tráfico normal, así que no sabemos cuántas son anomalías reales y cuántas falsas alarmas.</p>
+<p>Sí podemos decir algo por construcción del generador. Las alertas de reglas son anomalías reales: solo las sesiones bot tienen el dispositivo bot_scraper, y solo las de alta latencia superan los 2,000 milisegundos, porque la latencia normal no pasa de 800. La incógnita está en las 7,810 alertas que solo marcó Isolation Forest.</p>
+<p>Sobre las etiquetas: existen solo porque los datos son sintéticos. Para detectar no se deben usar, porque en producción no existen. Para evaluar sí debimos usarlas, y no lo hicimos: Flink no las propaga en el vector y el detector solo guarda alertas. Es una omisión del diseño de la evaluación, con corrección directa: llevar las etiquetas solo para evaluar, guardar todos los vectores y calcular la matriz de confusión.</p></div>
+<div class="tbl"><table>
+<tr><th>Uso de las etiquetas</th><th>¿Correcto?</th><th>Qué pasó</th></tr>
+<tr><td>Para detectar</td><td>No: en producción no existen</td><td>Correcto no usarlas</td></tr>
+<tr><td>Para evaluar</td><td>Sí: es su función</td><td>No se usaron: Flink descarta is_anomaly; solo se guardan alertas</td></tr>
+</table></div>
+<h3>Qué sabemos y qué no (faker_producer.py)</h3>
+<div class="tbl"><table>
+<tr><th>Alertas</th><th>¿Anomalía real?</th><th>Por qué</th></tr>
+<tr><td>R1 · 3,011 bots</td><td>Sí, por construcción</td><td>bot_scraper solo lo emiten las sesiones bot</td></tr>
+<tr><td>R2 · latencia &gt; 2,000 ms</td><td>Sí, por construcción</td><td>Latencia normal acotada a 20–800 ms; solo high_latency emite 2,000–8,000</td></tr>
+<tr><td>Solo IF · 7,810</td><td>No se sabe</td><td>Pueden ser checkout_drop o sesiones normales (contamination 8 %)</td></tr>
+<tr><td>checkout_drop</td><td>No medido</td><td>Ninguna regla lo mira</td></tr>
+</table></div>
+<div class="careful"><strong>Cuida esto.</strong> Nunca "sí, detecta anomalías reales" en general. Que las reglas aciertan "por construcción" es una virtud débil: se escribieron conociendo las firmas del generador; por eso la incógnita importante es el modelo. Reconoce la omisión y pasa a la corrección (anexo A1). Si citan 8.1 ("recupera la totalidad de las anomalías"): "la totalidad de las alertas emitidas". Etiquetas: para evaluar, sí; para detectar, nunca.</div>`
+},
+{
+ t:"Exactly-once \"no negociable\"", topic:"Trampa · garantías",
+ q:"En la memoria afirman que la semántica exactly-once es un requisito no negociable. ¿Su prototipo la cumple?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>No, el prototipo no la ejerce, y lo declaramos en las limitaciones.</p>
+<p>En la memoria, exactly-once fue un criterio de la arquitectura objetivo y una de las razones para elegir Flink, que la ofrece de forma nativa con sus checkpoints asíncronos. Pero en el prototipo, con enfoque de producto mínimo viable, no la activamos: no hay checkpointing y el sink no tiene garantía de entrega. Ante una caída de Flink, el tramo se comporta como at-most-once: no duplica, pero puede perder los eventos de ese intervalo.</p>
+<p>La frase "no negociable" describe el requisito del sistema en producción, no lo que el prototipo entrega. Activarla en Flink es configuración, no rediseño: checkpointing, el sink en exactly-once y consumidores que lean solo lo confirmado. Para que sea de extremo a extremo, además, el detector debería escribir de forma idempotente en SQLite. El costo es algo de latencia de publicación, que se regula con el intervalo de checkpoint.</p></div>
+<div class="tbl"><table>
+<tr><th>Pieza</th><th>Hoy</th><th>Para exactly-once</th></tr>
+<tr><td>Flink</td><td>Sin checkpointing</td><td><code>env.enable_checkpointing(...)</code></td></tr>
+<tr><td>Sink a Kafka</td><td>Sin garantía (NONE)</td><td><code>set_delivery_guarantee(EXACTLY_ONCE)</code> (transacciones)</td></tr>
+<tr><td>Detector y dashboard</td><td>Leen todo</td><td>Solo lo confirmado (<code>read_committed</code>)</td></tr>
+<tr><td>SQLite y CSV</td><td>Insertan siempre</td><td>Escritura idempotente</td></tr>
+</table></div>
+<ul class="pts">
+<li>Exactly-once en Flink cubre Kafka → Flink → Kafka. El detector y el dashboard están fuera: el extremo a extremo exige escrituras que no dupliquen.</li>
+<li>"¿La memoria exagera?" → Describe el requisito de la arquitectura objetivo; en el prototipo es una capacidad del motor no ejercida, declarada.</li>
+<li>"¿Qué pierde hoy?" → Ante una caída de Flink, los eventos de ese intervalo y las ventanas abiertas. En operación normal, nada.</li>
+<li>Secciones de la memoria: 5.1.4, 5.1.7 y nota 2.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> No digas "Flink lo garantiza": Flink PUEDE; el prototipo no lo activa. Exactly-once = ni se pierde ni se duplica. No digas "la memoria está mal": "describe el requisito de la arquitectura objetivo".</div>`
+},
+{
+ t:"¿Listo para producción?", topic:"Trampa · producción",
+ q:"¿Su sistema está listo para producción?",
+ a:`<h3>Para decir en voz alta</h3>
+<div class="say"><p>No. Es un prototipo funcional de la arquitectura, construido con enfoque de producto mínimo viable. Demuestra que las cinco capas funcionan de extremo a extremo, pero le faltan cuatro cosas para producción.</p>
+<p>Primero, validez: evaluarlo con matriz de confusión y luego con datos reales, recalibrando umbrales, aristas esperadas y reentrenando el modelo.</p>
+<p>Segundo, confiabilidad: checkpointing, exactly-once y Kafka con varios brokers y replicación. Hoy hay un broker con replicación uno: si cae, se detiene todo.</p>
+<p>Tercero, escala: Flink en clúster y varias particiones. El diseño ya lo permite, porque los eventos van con clave de sesión.</p>
+<p>Cuarto, seguridad y cumplimiento: Kafka sin cifrado ni autenticación, y la IP y el usuario sin seudonimizar ni plazo de borrado.</p>
+<p>Lo de infraestructura es sobre todo configuración. Lo de validez requiere trabajo de evaluación, y por eso va primero.</p></div>
+<div class="tbl"><table>
+<tr><th></th><th>Listo (patrón)</th><th>Falta para producción</th></tr>
+<tr><td>Validez</td><td>Detección híbrida operativa</td><td>Matriz de confusión; datos reales; recalibrar R1–R3 y aristas; reentrenar</td></tr>
+<tr><td>Confiabilidad</td><td>Kafka desacopla las capas</td><td>Checkpointing, exactly-once, 3 brokers con RF 3</td></tr>
+<tr><td>Escala</td><td>Clave session_id → listo para particionar</td><td>Clúster Flink, N particiones, varias instancias del detector</td></tr>
+<tr><td>Seguridad y privacidad</td><td>Datos sintéticos; session_id seudónimo</td><td>Kafka con TLS y autenticación (hoy PLAINTEXT); seudonimizar IP; plazo de borrado</td></tr>
+<tr><td>Operación</td><td>Dashboard en vivo</td><td>Monitorear el propio pipeline (lag, caídas); latencia instrumentada; indicador de conexión real</td></tr>
+</table></div>
+<ul class="pts">
+<li>"¿Cuánto falta?" → La infraestructura es configuración conocida; la validez depende de los datos reales. Sin plazos.</li>
+<li>"¿Qué valor tiene?" → Demuestra la integración: flujo, detección por sesión y grafo en vivo en un solo pipeline. Es la brecha del estado del arte.</li>
+<li>"¿Lo usarían hoy?" → Como piloto sobre datos reales, para evaluarlo; no como sistema de alertas en producción.</li>
+</ul>
+<div class="careful"><strong>Cuida esto.</strong> Nunca "casi listo" ni "con pequeños ajustes": la validez no es un ajuste pequeño. Cierra con el valor: el aporte es la integración. Usa "prototipo funcional" y "producto mínimo viable", no "demo".</div>`
+}
+
 ];
 
 const listEl=document.getElementById('qlist');
