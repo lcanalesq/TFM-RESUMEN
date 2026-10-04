@@ -92,6 +92,7 @@ tr.total td{font-weight:600;border-bottom:0}
 .tabs button.hit{background:var(--hit)}
 .tabs button.hit[aria-selected="true"]{background:var(--q);box-shadow:inset 0 -4px 0 var(--hit-line)}
 .qlist button.hit{background:var(--hit);border-color:var(--hit-line)}
+mark.sh{background:var(--hit);color:inherit;border-bottom:2px solid var(--hit-line);border-radius:3px;padding:0 1px}
 .qlist button.hit[aria-current="true"]{background:var(--q);border-color:var(--q-line);box-shadow:inset 4px 0 0 var(--hit-line)}
 @media (max-width:820px){
   .wrap{grid-template-columns:1fr}
@@ -1167,7 +1168,27 @@ Conteo     = diccionarios de Python propios, ninguna librería</pre>
 const listEl=document.getElementById('qlist');
 const tabs=[...document.querySelectorAll('.tabs button')];
 let block=0, cur=0;
-let hits=new Set();
+let hits=new Set(), terms=[];
+function charNorm(c){const n=c.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return n.length===1?n:c;}
+function termRe(){if(!terms.length)return null;return new RegExp(terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/s/g,'s{1,2}')).join('|'),'g');}
+function markIn(root,re){
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), nodes=[];
+  while(w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(node=>{
+    const t=node.nodeValue; let nt=''; for(let i=0;i<t.length;i++) nt+=charNorm(t[i]);
+    re.lastIndex=0; let m, last=0; const frag=document.createDocumentFragment(); let found=false;
+    while((m=re.exec(nt))){ if(!m[0].length){re.lastIndex++;continue;} found=true;
+      if(m.index>last) frag.appendChild(document.createTextNode(t.slice(last,m.index)));
+      const mk=document.createElement('mark'); mk.className='sh'; mk.textContent=t.slice(m.index,m.index+m[0].length); frag.appendChild(mk);
+      last=m.index+m[0].length; }
+    if(found){ if(last<t.length) frag.appendChild(document.createTextNode(t.slice(last))); node.parentNode.replaceChild(frag,node); }
+  });
+}
+function paintContent(){
+  const it=Q[cur], qt=document.getElementById('qtext'), ans=document.getElementById('answer');
+  qt.textContent=it.q; ans.innerHTML=it.a;
+  const re=termRe(); if(re){markIn(qt,re);markIn(ans,re);}
+}
 function norm(x){return x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/ss/g,'s');}
 const IDX=Q.map(it=>norm(it.t+' '+it.topic+' '+it.q+' '+it.a.replace(/<[^>]+>/g,' ')));
 function paintTabs(){tabs.forEach((b,i)=>{let h=false;for(const x of hits){if(Math.floor(x/10)===i){h=true;break;}}b.classList.toggle('hit',h);});}
@@ -1197,9 +1218,9 @@ function show(i){
   cur=i; const it=Q[i];
   document.getElementById('qnum').textContent=(i+1)+' de '+Q.length;
   document.getElementById('qtopic').textContent=it.topic;
-  document.getElementById('qtext').textContent=it.q;
+  paintContent();
   const ans=document.getElementById('answer');
-  ans.innerHTML=it.a; ans.style.animation='none'; void ans.offsetWidth; ans.style.animation='';
+  ans.style.animation='none'; void ans.offsetWidth; ans.style.animation='';
   document.getElementById('prev').disabled=i===0;
   document.getElementById('next').disabled=i===Q.length-1;
   block=Math.floor(i/10); renderList();
@@ -1217,9 +1238,9 @@ document.addEventListener('keydown',e=>{
 const sq=document.getElementById('sq'), sst=document.getElementById('sstatus');
 document.getElementById('sform').addEventListener('submit',e=>{
   e.preventDefault();
-  const terms=norm(sq.value).split(/\s+/).filter(Boolean);
+  terms=norm(sq.value).split(/\s+/).filter(Boolean);
   hits=new Set();
-  if(!terms.length){sst.textContent='';renderList();return;}
+  if(!terms.length){sst.textContent='';renderList();paintContent();return;}
   IDX.forEach((txt,i)=>{if(terms.every(t=>txt.includes(t)))hits.add(i);});
   const nb=new Set([...hits].map(i=>Math.floor(i/10))).size;
   if(!hits.size) sst.textContent='Sin resultados para "'+sq.value.trim()+'".';
@@ -1227,9 +1248,9 @@ document.getElementById('sform').addEventListener('submit',e=>{
     const nums=[...hits].sort((a,b)=>a-b).map(i=>i+1).join(', ');
     sst.innerHTML='<b>'+hits.size+(hits.size===1?' pregunta':' preguntas')+'</b> en '+nb+(nb===1?' pestaña':' pestañas')+' · '+nums;
   }
-  renderList();
+  renderList(); paintContent();
 });
-document.getElementById('sreset').addEventListener('click',()=>{hits=new Set();sq.value='';sst.textContent='';renderList();});
+document.getElementById('sreset').addEventListener('click',()=>{hits=new Set();terms=[];sq.value='';sst.textContent='';renderList();paintContent();});
 let start=0;
 const m=location.hash.match(/^#q(\d+)$/);
 if(m) start=Math.min(Q.length,Math.max(1,+m[1]))-1;
