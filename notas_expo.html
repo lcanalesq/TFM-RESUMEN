@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notas de exposición</title>
+<style>
+:root{
+  --bg:#16181d; --card:#1f2229; --ink:#eef0f4; --soft:#a9b0bd; --faint:#6f7785;
+  --acc:#f2b865; --mark:rgba(242,184,101,.18); --rule:#2c3039;
+  --help:#1b2a33; --helpb:#35566a; --helpt:#9fc3d8;
+  --fs:26px;
+}
+:root[data-theme="light"]{
+  --bg:#f6f3ee; --card:#ffffff; --ink:#1d2027; --soft:#4d5562; --faint:#8a919c;
+  --acc:#a8621a; --mark:rgba(168,98,26,.14); --rule:#e2ddd4;
+  --help:#eef4f8; --helpb:#b9cfdd; --helpt:#3c6782;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* barra superior */
+.bar{position:sticky;top:0;display:flex;gap:8px;align-items:center;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--rule);z-index:5}
+.now{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.now .n{flex:none;min-width:40px;height:40px;padding:0 8px;border-radius:10px;background:var(--acc);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+.now .tt{font-size:15px;font-weight:600;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar button{font:inherit;font-size:14px;background:var(--card);color:var(--soft);border:1px solid var(--rule);border-radius:8px;padding:5px 10px;cursor:pointer}
+.bar button:hover{color:var(--ink);border-color:var(--faint)}
+
+main{max-width:860px;margin:0 auto;padding:18px 16px 70vh}
+section.slide{scroll-margin-top:64px;padding-top:10px;margin-bottom:46px}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.num{flex:none;width:58px;height:58px;border-radius:14px;background:var(--acc);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+.head h1{margin:0;font-size:calc(var(--fs)*.9);line-height:1.2}
+.head .meta{font-size:14px;color:var(--faint);margin-top:3px}
+
+.blk{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px 20px;margin-bottom:12px}
+.lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+p{margin:0 0 .55em;font-size:var(--fs);line-height:1.55}
+p:last-child{margin-bottom:0}
+.hook p{font-size:calc(var(--fs)*1.08);font-weight:700}
+.lead{font-weight:700}
+b,.k{color:var(--acc);font-weight:700}
+.k{background:var(--mark);border-radius:5px;padding:0 5px}
+.cue{color:var(--faint);font-style:italic;font-size:calc(var(--fs)*.8)}
+.pr{color:var(--faint);font-weight:400;font-size:calc(var(--fs)*.7)}
+.next{border-left:4px solid var(--acc)}
+.next p{font-weight:600}
+
+/* apoyo: no se dice */
+.help{background:var(--help);border:1px dashed var(--helpb);border-radius:10px;padding:8px 12px;margin:.3em 0 .6em;color:var(--helpt);font-size:calc(var(--fs)*.72);line-height:1.5}
+.help::before{content:'APOYO · NO LO DIGO';display:block;font-size:11px;letter-spacing:.12em;opacity:.8;margin-bottom:2px}
+
+.tips{font-size:15px;color:var(--soft);line-height:1.6;border-style:dashed}
+.tips summary{cursor:pointer;color:var(--faint);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.tips ul{margin:8px 0 0;padding-left:20px}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="now"><div class="n" id="nowN">1</div><div class="tt" id="nowT">Portada</div></div>
+  <button id="prev" title="Slide anterior (←)">◀</button>
+  <button id="next" title="Slide siguiente (→)">▶</button>
+  <button id="minus" title="Letra más pequeña (−)">A−</button>
+  <button id="plus" title="Letra más grande (+)">A+</button>
+  <button id="theme" title="Cambiar tema">Claro / Oscuro</button>
+</div>
+
+<main>
+
+<!-- ═════════ SLIDE 1 ═════════ -->
+<section class="slide" data-n="1" data-title="Portada">
+  <div class="head">
+    <div class="num">1</div>
+    <div><h1>Portada</h1><div class="meta">Meta 0:30 · ensayo 0:28</div></div>
+  </div>
+
+  <div class="blk hook">
+    <p>Buenas tardes, miembros del <span class="k">tribunal</span>.</p>
+  </div>
+
+  <div class="blk">
+    <p>Somos <b>Benjamín Romero</b> y yo, <b>Luis Canales</b>, y les presentaremos nuestro trabajo de fin de máster:</p>
+  </div>
+
+  <div class="blk next">
+    <div class="lbl">Título · mirar a la cámara</div>
+    <p>Arquitectura de Stream Processing para la Observabilidad del Comportamiento del Usuario <span class="cue">/</span></p>
+    <p>y Detección Proactiva de Anomalías en E-commerce <span class="cue">/</span></p>
+    <p>mediante Análisis de Grafos en Tiempo Real. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 1</summary>
+    <ul>
+      <li>"Buenas tardes": en Madrid son las 17:00.</li>
+      <li>"<b>Tribunal</b>", no "jurado"; sin "señores".</li>
+      <li>Pausas en las barras: tras "usuario" y tras "e-commerce".</li>
+      <li>Mirar a la cámara al decir el título.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 2 ═════════ -->
+<section class="slide" data-n="2" data-title="Índice">
+  <div class="head">
+    <div class="num">2</div>
+    <div><h1>Índice</h1><div class="meta">Meta 0:30 · ensayo 0:19</div></div>
+  </div>
+
+  <div class="blk">
+    <p>La exposición tiene <b>cuatro partes</b>.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Yo · 01, 02 y 04</div>
+    <p><b>Yo</b> les presentaré:</p>
+    <p>el problema y fundamentos,</p>
+    <p>los objetivos e hipótesis, y los resultados.</p>
+  </div>
+
+  <div class="blk next">
+    <div class="lbl">Benjamín · 03</div>
+    <p><b>Benjamín</b> presentará:</p>
+    <p>la arquitectura y desarrollo,</p>
+    <p>una demo,</p>
+    <p>y las conclusiones. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 2</summary>
+    <ul>
+      <li>Al decir "yo", señalar 01, 02 y 04; al decir "Benjamín", 03.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 3 ═════════ -->
+<section class="slide" data-n="3" data-title="El problema: el time-to-insight">
+  <div class="head">
+    <div class="num">3</div>
+    <div><h1>El problema: el time-to-insight</h1><div class="meta">Meta 1:30 · ensayo 1:40</div></div>
+  </div>
+
+  <div class="blk hook"><p>El dato existe. El sistema no lo procesa a tiempo.</p></div>
+
+  <div class="blk">
+    <div class="lbl">Ejemplo</div>
+    <p>Imaginemos un día de <b>Black Friday</b>. Algunos clientes quieren comprar, pero un error en el pago se lo impide.</p>
+    <p>Como ese día las ventas son altas, <b>el total parece normal</b>, y la falla pasa desapercibida.</p>
+    <p>Pueden pasar horas, o varios reportes, sin que nadie la note, hasta que uno muestra muchas sesiones que iniciaron el pago y no compraron.</p>
+    <p>Para ese entonces, las ventas ya se perdieron.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Definición</div>
+    <p>Ese es el problema que abordamos: <span class="k">el time-to-insight</span>.</p>
+    <p>Es la brecha entre el momento en que ocurre un evento crítico y el momento en que el equipo lo detecta.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Batch vs. streaming</div>
+    <p>En un esquema <b>batch</b>, el evento se acumula, se procesa por lotes y se reporta en horas o al día siguiente.</p>
+    <p>En un esquema <b>streaming</b>, el evento entra a Kafka, Flink lo agrupa <b>por sesión</b> en ventanas de 10 segundos, y la alerta sale en segundos.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Propuesta</div>
+    <p>Nuestra propuesta es un pipeline con software <b>open source</b>. Detecta anomalías por sesión mientras ocurren, y muestra el recorrido del usuario en un <b>grafo de navegación</b>.</p>
+  </div>
+
+  <div class="blk next"><p>Para construirlo, nos apoyamos en cuatro pilares teóricos. <span class="cue">→ clic</span></p></div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 3</summary>
+    <ul>
+      <li>Empezar directo con "El dato existe"; no leer el título.</li>
+      <li>Nombrar "el time-to-insight" al definirlo.</li>
+      <li>"Flink lo agrupa <b>por sesión</b>".</li>
+      <li>Sin "pues", sin "el cual", sin "Y" al inicio.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 4 ═════════ -->
+<section class="slide" data-n="4" data-title="Marco teórico: cuatro pilares">
+  <div class="head">
+    <div class="num">4</div>
+    <div><h1>Marco teórico: cuatro pilares</h1><div class="meta">Meta 1:30 · ensayo 1:43</div></div>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Pilar 1 · Procesamiento en flujo</div>
+    <p class="lead">El primero es el procesamiento en flujo.</p>
+    <p><b>Carbone</b> y colaboradores, en 2015, nos presentan Flink como un motor único que unifica flujo y lotes.</p>
+    <p>De ahí tomamos el <b>estado por sesión</b> y las <b>ventanas de tiempo</b>.</p>
+    <p>El contraste es el data warehouse por lotes de <b>Kimball y Ross</b>.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Pilar 2 · Detección de anomalías</div>
+    <p class="lead">El segundo es la detección de anomalías.</p>
+    <p><b>Chandola</b> y sus colaboradores, en 2009, clasifican las técnicas según la necesidad de etiquetas.</p>
+    <div class="help">Supervisadas, semisupervisadas y no supervisadas.</div>
+    <p>En producción, las anomalías nuevas llegan sin etiquetas; por ello elegimos el <span class="k">enfoque no supervisado</span>:</p>
+    <p><b>Isolation Forest</b>, presentado por <b>Liu, Ting y Zhou</b> <span class="pr">(chou)</span> en 2008, que aísla lo anómalo en pocos cortes.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Pilar 3 · Minería de uso web</div>
+    <p class="lead">El tercer pilar es la minería de uso web.</p>
+    <p><b>Srivastava</b> y colaboradores, en 2000, la dividen en tres fases: <b>preprocesamiento, descubrimiento y análisis de patrones</b>.</p>
+    <p>Nuestras capas siguen esa misma separación, pero en flujo continuo.</p>
+    <p><b>Bucklin y Sismeiro</b>, en 2009, muestran el valor del clickstream a nivel de sesión.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Pilar 4 · Grafos de navegación</div>
+    <p class="lead">Por último: grafos de navegación.</p>
+    <p><b>Newman</b>, en 2010, da la definición formal del <b>grafo dirigido y ponderado</b>.</p>
+    <div class="help">Dirigido: el sentido de cada transición. Ponderado: cada una tiene un peso, cuántas veces ocurrió.</div>
+    <p>En 2022, <b>Huidobro</b> y colaboradores aplican esa idea <b>a</b> la navegación:</p>
+    <p>la representan como un grafo para ver el recorrido del usuario y en qué punto abandona el sitio. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 4</summary>
+    <ul>
+      <li>No leer las preguntas de la slide.</li>
+      <li>"<b>Enfoque</b> no supervisado", no "modelo".</li>
+      <li>Bucklin: <b>punto</b> tras "a nivel de sesión". Nunca "responder en tiempo real a cada usuario".</li>
+      <li>Huidobro: "aplican esa idea <b>a</b> la navegación" (no "de la").</li>
+      <li>Sin cierre "nuestro aporte es…": eso es la brecha de la slide 5.</li>
+      <li>Si te trabas con un nombre, repítelo sin decir "perdón".</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 5 ═════════ -->
+<section class="slide" data-n="5" data-title="Estado del arte: la brecha">
+  <div class="head">
+    <div class="num">5</div>
+    <div><h1>Estado del arte: la brecha</h1><div class="meta">Meta 1:30 · ensayo 1:06</div></div>
+  </div>
+
+  <div class="blk hook">
+    <p>Con estos pilares, ¿qué existe hoy y qué falta?</p>
+  </div>
+
+  <div class="blk">
+    <p>Para responderlo, comparamos <b>cuatro referentes</b> con nuestra propuesta.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Los referentes</div>
+    <p><b>Google Analytics 4 y Mixpanel</b> detectan anomalías, pero sobre <b>métricas agregadas</b>, por hora o por día, no por sesión; y son plataformas cerradas.</p>
+    <div class="help">Una serie agregada es, por ejemplo, el total de conversiones por día. Si el total cae, la plataforma alerta, pero solo cuando muchas sesiones ya se vieron afectadas. Nosotros evaluamos cada sesión mientras ocurre.</div>
+    <p><b>Chandola</b> y colaboradores hacen una <b>revisión</b> de técnicas de detección; no un sistema.</p>
+    <p><b>Huidobro y Li</b> <span class="pr">(li)</span> trabajan la navegación, como grafo o como predicción, pero sobre <b>datos históricos</b> y sin detectar anomalías.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Nuestra propuesta</div>
+    <p>Nuestra propuesta evalúa <b>cada sesión</b> en ventanas de 10 segundos,</p>
+    <p>con <b>reglas e Isolation Forest</b>,</p>
+    <p>y construye <b>el grafo desde el flujo</b>.</p>
+  </div>
+
+  <div class="blk next">
+    <p>La brecha es <span class="k">la integración</span>: ninguno de los enfoques revisados reúne las cuatro capacidades. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 5</summary>
+    <ul>
+      <li>"Chandola y colaboradores <b>hacen una revisión</b>" (no "Chandola es una revisión").</li>
+      <li>"Li" se pronuncia "li".</li>
+      <li>El ejemplo de la serie agregada es reserva para preguntas: no lo digas en la exposición.</li>
+      <li>Nada de "mejor" ni "superior": "integra", "reúne", "complementa".</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 6 ═════════ -->
+<section class="slide" data-n="6" data-title="Objetivos">
+  <div class="head">
+    <div class="num">6</div>
+    <div><h1>Objetivos</h1><div class="meta">Meta 1:00 · ensayo 1:08</div></div>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Objetivo general</div>
+    <p>Nuestro objetivo general es <b>diseñar, desarrollar y validar</b> una arquitectura de stream processing para observar el comportamiento del usuario y detectar anomalías de forma proactiva en e-commerce.</p>
+  </div>
+
+  <div class="blk">
+    <p>Lo dividimos en <b>cinco objetivos específicos</b>.</p>
+    <p>Los cuatro primeros siguen <span class="k">el camino del dato</span>, desde la ingesta hasta la visualización.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">OE1 – OE4 · camino del dato</div>
+    <p><b>Primero</b>, capturar los eventos de navegación con Kafka, a partir de un generador sintético.</p>
+    <p><b>Segundo</b>, convertirlos en un vector por sesión con Flink, y construir el grafo de navegación desde el mismo flujo.</p>
+    <p><b>Tercero</b>, detectar anomalías por sesión aplicando reglas e Isolation Forest, sin datos etiquetados.</p>
+    <p><b>Cuarto</b>, desarrollar un dashboard analítico e interactivo que muestre las alertas y el grafo.</p>
+  </div>
+
+  <div class="blk next">
+    <div class="lbl">OE5 · evaluación</div>
+    <p><b>El quinto</b> evalúa el sistema completo: que la alerta se publique en menos de tres segundos tras cerrar la ventana, y comparar el time-to-insight frente al procesamiento por lotes. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 6</summary>
+    <ul>
+      <li>"El camino del dato" (no "el recorrido").</li>
+      <li>"<b>Aplicando</b> reglas" (no "con reglas").</li>
+      <li>"El quinto evalúa…" de corrido, sin pausa.</li>
+      <li>Es planteamiento: "es", no "fue"; sin resultados ni "alcanzado".</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 7 ═════════ -->
+<section class="slide" data-n="7" data-title="Hipótesis de investigación">
+  <div class="head">
+    <div class="num">7</div>
+    <div><h1>Hipótesis de investigación</h1><div class="meta">Meta 1:00 · ensayo 0:59</div></div>
+  </div>
+
+  <div class="blk">
+    <p>Del objetivo general derivamos <b>tres hipótesis</b>, cada una con una forma concreta de contrastarla.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">H1 · Rendimiento en tiempo real</div>
+    <p><b>Primera hipótesis</b>, rendimiento en tiempo real: la alerta se publica en <b>menos de tres segundos</b> tras el cierre de la ventana.</p>
+    <p>La contrastamos mediante <b>observación operativa</b>: el tiempo entre el cierre de la ventana y la publicación de la alerta.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">H2 · Hipótesis central</div>
+    <p><b>Segunda</b>, nuestra hipótesis central: la combinación de <b>reglas e Isolation Forest</b> supera en recall <span class="pr">(rícol)</span> y F1 a cada capa aislada.</p>
+    <p>La contrastamos comparando las métricas de cada enfoque.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">H3 · Complementariedad</div>
+    <p><b>Tercera hipótesis</b>, la complementariedad: las capas detectan subconjuntos <b>mayormente distintos</b> y coinciden en lo más severo.</p>
+    <p>La contrastamos midiendo el porcentaje de alertas marcadas por ambas capas.</p>
+  </div>
+
+  <div class="blk next"><p>Los resultados los veremos al final. <span class="cue">→ clic</span></p></div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 7</summary>
+    <ul>
+      <li>"Reglas <b>e</b> Isolation Forest".</li>
+      <li>No leer "Superioridad del híbrido" ni los números de sección.</li>
+      <li>Sin resultados: solo cómo se contrasta cada una.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 8 ═════════ -->
+<section class="slide" data-n="8" data-title="Marco normativo">
+  <div class="head">
+    <div class="num">8</div>
+    <div><h1>Marco normativo</h1><div class="meta">Meta 1:00 · ensayo 1:11 con traspaso</div></div>
+  </div>
+
+  <div class="blk hook">
+    <p>Un sistema que analiza el comportamiento de usuarios trata datos personales.</p>
+  </div>
+
+  <div class="blk">
+    <p>Si una dirección IP o una cookie permite identificar a una persona, ya aplica la norma.</p>
+    <p>Por eso revisamos <b>tres marcos</b>.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Los tres marcos</div>
+    <p>El <b>europeo</b>, porque UNIR es una universidad española. Ahí aplican el <b>RGPD</b> y la ley española que lo adapta y le agrega derechos digitales.</p>
+    <div class="help">LOPD-GDD: Ley Orgánica de Protección de Datos Personales y garantía de los derechos digitales (2018). Adapta el RGPD al derecho español y agrega derechos digitales.</div>
+    <p>El <b>peruano</b> y el <b>colombiano</b>, porque somos autores de esos países.</p>
+    <p>En Perú, la <b>Ley 29733</b> del año 2011 y su reglamento del 2024.</p>
+    <p>En Colombia, la <b>Ley Estatutaria 1581</b> del 2012.</p>
+  </div>
+
+  <div class="blk">
+    <p>Los tres marcos comparten <b>cuatro principios</b>: consentimiento, minimización, finalidad y seguridad.</p>
+    <div class="help">
+      <b>Consentimiento:</b> solo se tratan datos personales si el titular lo autorizó (o hay otra base legal); libre, informado y específico.<br>
+      <b>Minimización:</b> solo los datos necesarios para el fin declarado, ni uno más.<br>
+      <b>Finalidad:</b> los datos se usan solo para el fin informado al recogerlos; no para otro incompatible.<br>
+      <b>Seguridad:</b> medidas técnicas y organizativas contra pérdida, alteración o acceso no autorizado.
+    </div>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Decisión de diseño</div>
+    <p>De ahí nuestra decisión de diseño: datos <b>100 % sintéticos</b>, generados con Faker.</p>
+    <p>No hay ningún titular real, así que la investigación <span class="k">queda fuera del ámbito</span> de estas normas.</p>
+    <p>Y seguimos el principio de <b>privacidad desde el diseño</b>, para cuando el sistema pase a datos reales.</p>
+  </div>
+
+  <div class="blk next">
+    <div class="lbl">Traspaso</div>
+    <p>Con esto, le doy la palabra a <b>Benjamín</b>, que presenta la arquitectura. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 8</summary>
+    <ul>
+      <li>"<b>Trata</b> datos personales" (no "trata con").</li>
+      <li>Sin coma entre "usuarios" y "trata".</li>
+      <li>"Queda fuera del ámbito", nunca "cumplimos el RGPD".</li>
+      <li>El traspaso a Benjamín es imprescindible en Zoom.</li>
+    </ul>
+  </details>
+</section>
+
+<div class="blk" style="text-align:center;color:var(--faint);font-size:16px;margin:10px 0 46px">▸ Benjamín · slides 9 a 13</div>
+
+<!-- ═════════ SLIDE 14 ═════════ -->
+<section class="slide" data-n="14" data-title="Resultados: 13,696 alertas">
+  <div class="head">
+    <div class="num">14</div>
+    <div><h1>Resultados: 13,696 alertas</h1><div class="meta">Meta 1:30 · ensayo 1:24</div></div>
+  </div>
+
+  <div class="blk hook">
+    <p>En total, el sistema emitió 13,696 alertas.</p>
+  </div>
+
+  <div class="blk">
+    <p>Las separamos según qué capa las disparó.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Solo reglas · 38 %</div>
+    <p><b>5,200</b> las disparó solo la capa de reglas, un <b>38 %</b>.</p>
+    <p>Son dos patrones conocidos: la regla <b>R1 marca los bots</b>, con latencias de 1 a 18 ms; y la <b>R2</b>, las sesiones con <b>latencia media</b> mayor a 2,000 ms.</p>
+    <div class="help">5,200 = 3,011 bots (R1) + 2,189 de R2. Bots: media 9.5 ms. R2 en total: 2,875 alertas, de 2,029 a 7,943 ms, media 5,002 ms.</div>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Solo Isolation Forest · 57 %</div>
+    <p><b>7,810</b> las disparó solo Isolation Forest, un <b>57 %</b>. Aquí la latencia es normal, unos 120 ms.</p>
+    <p>Lo atípico es <b>la combinación de métricas</b>, algo que ninguna regla describe.</p>
+    <div class="help">De 6 a 14 clics; latencia de 84 a 166.6 ms, media 119.7 ms.</div>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Ambas capas · 5 %</div>
+    <p>Y <b>686</b> las dispararon ambas capas, solo el <b>5 %</b>. Son los casos más severos, con una latencia media de más de 5 segundos.</p>
+    <div class="help">Latencia de 3,542 a 6,545 ms, media 5,055 ms. (La memoria dice 3,452 por error.)</div>
+  </div>
+
+  <div class="blk">
+    <p>Es decir: el <span class="k">95 %</span> de las alertas lo detectó una capa u otra, y solo el 5 % coincide.</p>
+    <p>Cada capa ve cosas distintas.</p>
+  </div>
+
+  <div class="blk next">
+    <p>Un dato más: la regla <b>R3</b>, de exceso de clics, <b>no se activó</b>, porque el generador no produjo sesiones con tantos clics.</p>
+    <p>Lo retomamos en las limitaciones. <span class="cue">→ clic</span></p>
+    <div class="help">Máximo 14 clics por sesión; el umbral de R3 es 35.</div>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 14</summary>
+    <ul>
+      <li>"<b>LAS</b> disparó" (plural).</li>
+      <li>"La regla R1 <b>marca</b> los bots" (no "los bots que marcan la regla").</li>
+      <li>"Latencia <b>media</b> mayor a 2,000"; decir "dos mil milisegundos".</li>
+      <li>Pausa tras "solo el 5 %".</li>
+      <li>"Solo" = exclusivo (esta slide); "en total" = cobertura (slide 15).</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ═════════ SLIDE 15 ═════════ -->
+<section class="slide" data-n="15" data-title="Métricas y validación de hipótesis">
+  <div class="head">
+    <div class="num">15</div>
+    <div><h1>Métricas y validación de hipótesis</h1><div class="meta">Meta 2:00 · ensayo 2:03</div></div>
+  </div>
+
+  <div class="blk">
+    <p>Con esas alertas evaluamos <b>la hipótesis central</b>.</p>
+    <p>El gráfico compara tres enfoques: solo reglas, solo Isolation Forest y el híbrido.</p>
+    <p>Y tres métricas: precisión, recall y F1.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Cómo leerlo</div>
+    <p>Primero, el universo son las <b>13,696 alertas emitidas</b>.</p>
+    <p>Como todas son alertas, no puede haber falsos positivos:</p>
+    <p>la precisión es 1 en los tres casos, <span class="k">por construcción de la evaluación</span>.</p>
+    <p>Y el híbrido cubre el 100 %, porque cada alerta del registro la disparó una capa o la otra.</p>
+    <p><b>Ninguna de esas dos cifras es un mérito.</b></p>
+    <div class="help">Una capa que marcara filas al azar también tendría precisión 1. Con P = 1, el F1 depende solo del recall.</div>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Lo informativo</div>
+    <p>Lo informativo es cuánto cubre cada capa por sí sola.</p>
+    <p>Las reglas, en total, cubren el <b>43 %</b>, con un F1 de <b>0.601</b>.</p>
+    <p>Isolation Forest, el <b>62 %</b>, con un F1 de <b>0.766</b>.</p>
+  </div>
+
+  <div class="blk">
+    <div class="lbl">Las hipótesis</div>
+    <p>Con eso, las hipótesis:</p>
+    <p><b>H1</b>, el rendimiento en tiempo real: <b>sustentada por observación</b>.</p>
+    <p>Las alertas aparecen tras el cierre de la ventana, <span class="k">pero la latencia no fue instrumentada</span>.</p>
+    <p><b>H2</b>, la hipótesis central: <b>validada en términos relativos</b>.</p>
+    <p>El híbrido gana 39.9 puntos de F1 frente a las reglas y 23.4 frente a Isolation Forest.</p>
+    <p><b>H3</b>, la complementariedad: <b>validada</b>.</p>
+    <p>Solo el 5 % de las alertas coincide en ambas capas, y son las más severas.</p>
+  </div>
+
+  <div class="blk">
+    <p>Lo que esta evaluación <b>no permite decir</b> es cuántas alertas son anomalías reales.</p>
+    <div class="help">Corrección: etiquetas solo para evaluar, guardar todos los vectores y calcular la matriz de confusión (anexo A1).</div>
+  </div>
+
+  <div class="blk next">
+    <div class="lbl">Traspaso</div>
+    <p>Eso, y las demás limitaciones, lo presenta <b>Benjamín</b>. Le doy la palabra. <span class="cue">→ clic</span></p>
+  </div>
+
+  <details class="blk tips">
+    <summary>Tips de la slide 15</summary>
+    <ul>
+      <li>"Sustentad<b>a</b>" (no "sustentado").</li>
+      <li>No omitir "pero la latencia no fue instrumentada": declara la limitación antes que el tribunal.</li>
+      <li>"1 <b>en</b> los tres casos"; "gana 39.9 puntos" (sin "en").</li>
+      <li>Al decir 43 % y 62 %, señalar las barras de recall; al decir 39.9 y 23.4, las de F1.</li>
+      <li>Si pasa de 2:15, quitar "Ninguna de esas dos cifras es un mérito".</li>
+    </ul>
+  </details>
+</section>
+
+<div class="blk" style="text-align:center;color:var(--faint);font-size:16px;margin:10px 0 46px">▸ Benjamín · slides 16 y 17 · cierre</div>
+
+</main>
+
+<script>
+const root=document.documentElement;
+let fs=26;
+function setFs(v){ fs=Math.min(44,Math.max(16,v)); root.style.setProperty('--fs',fs+'px'); }
+document.getElementById('plus').onclick=()=>setFs(fs+2);
+document.getElementById('minus').onclick=()=>setFs(fs-2);
+document.getElementById('theme').onclick=()=>{ root.dataset.theme = root.dataset.theme==='light'?'dark':'light'; };
+
+const slides=[...document.querySelectorAll('section.slide')];
+const nowN=document.getElementById('nowN'), nowT=document.getElementById('nowT');
+function current(){
+  const top=document.querySelector('.bar').offsetHeight+40;
+  let cur=0;
+  slides.forEach((s,i)=>{ if(s.getBoundingClientRect().top<=top) cur=i; });
+  return cur;
+}
+function update(){ if(target!==null) return; const s=slides[current()]; nowN.textContent=s.dataset.n; nowT.textContent=s.dataset.title; }
+let target=null, tmr=null;
+function jump(d){
+  const base = target!==null ? target : current();
+  const i=Math.min(slides.length-1,Math.max(0,base+d));
+  target=i; clearTimeout(tmr); tmr=setTimeout(()=>{target=null; update();},1200);
+  slides[i].scrollIntoView({block:'start'});
+  nowN.textContent=slides[i].dataset.n; nowT.textContent=slides[i].dataset.title;
+}
+document.getElementById('prev').onclick=()=>jump(-1);
+document.getElementById('next').onclick=()=>jump(1);
+window.addEventListener('scroll',update,{passive:true});
+document.addEventListener('keydown',e=>{
+  if(e.key==='+'||e.key==='=') setFs(fs+2);
+  if(e.key==='-') setFs(fs-2);
+  if(e.key==='ArrowRight') jump(1);
+  if(e.key==='ArrowLeft') jump(-1);
+});
+update();
+</script>
+</body>
+</html>
